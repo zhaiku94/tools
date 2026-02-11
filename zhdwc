@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>最后的晚餐游戏</title>
+    <style>
+        :root {
+            --primary-color: #8b0000;
+            --secondary-color: #a52a2a;
+            --arrest-color: #dc3545;
+            --expel-color: #6c757d;
+            --present-color: #28a745;
+            --revealed-color: #1890ff;
+            --text-color: #333;
+            --light-bg: #f5f5f5;
+            --card-bg: white;
+            --disabled-color: #adb5bd;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background-color: var(--light-bg);
+            margin: 0;
+            padding: 10px;
+            color: var(--text-color);
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+        
+        .section {
+            margin-bottom: 15px;
+            padding: 12px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        
+        .section-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: var(--primary-color);
+            font-size: 1.3rem;
+        }
+        
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            font-size: 1rem;
+            min-width: 100px;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: var(--secondary-color);
+        }
+        
+        .player-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .player-card {
+            background-color: var(--card-bg);
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 4px;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .player-card:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .player-card.present {
+            background-color: #f0fff0;
+            border-left: 4px solid var(--present-color);
+        }
+        
+        .player-card.arrested {
+            background-color: #fff0f0;
+            border-left: 4px solid var(--arrest-color);
+            color: #666;
+        }
+        
+        .player-card.expelled {
+            background-color: #f8f9fa;
+            border-left: 4px solid var(--expel-color);
+            color: #999;
+        }
+        
+        .player-card.revealed {
+            background-color: #e6f7ff;
+            border-left: 4px solid var(--revealed-color);
+        }
+        
+        .role {
+            font-weight: bold;
+            color: var(--primary-color);
+            font-size: 1rem;
+        }
+        
+        .status {
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+        
+        .status.present {
+            color: var(--present-color);
+        }
+        
+        .status.arrested {
+            color: var(--arrest-color);
+        }
+        
+        .status.expelled {
+            color: var(--expel-color);
+        }
+        
+        .status.revealed {
+            color: var(--revealed-color);
+        }
+        
+        .player-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 1.1rem;
+        }
+        
+        .timer {
+            font-size: 1.5rem;
+            text-align: center;
+            margin: 15px 0;
+        }
+        
+        .game-log {
+            height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background-color: white;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #eee;
+            word-break: break-word;
+        }
+        
+        .night-phase {
+            background-color: #333;
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        
+        .day-phase {
+            background-color: #f0e68c;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .arrest-btn {
+            background-color: #2c3e50;
+        }
+        
+        .expel-btn {
+            background-color: var(--arrest-color);
+        }
+        
+        .game-settings {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .setting-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .setting-group-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .setting-group label {
+            margin-right: 5px;
+            min-width: 120px;
+        }
+        
+        .setting-group input[type="number"] {
+            width: 80px;
+            padding: 5px;
+            font-size: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .setting-group input[type="checkbox"] {
+            transform: scale(1.2);
+            margin-right: 5px;
+        }
+        
+        .assign-roles-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .name-input {
+            margin-top: 5px;
+            padding: 5px;
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        
+        .skill-btn {
+            margin-top: 5px;
+            padding: 3px 8px;
+            font-size: 0.8rem;
+            background-color: #17a2b8;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        .skill-btn:disabled {
+            background-color: var(--disabled-color);
+            cursor: not-allowed;
+        }
+        
+        /* 主持人指南样式 */
+        .host-guide {
+            background-color: #f8f9fa;
+            border-left: 4px solid #6c757d;
+            padding: 25px;
+            margin-bottom: 25px;
+            border-radius: 8px;
+            line-height: 1.8;
+        }
+        
+        .host-guide h2 {
+            color: #8b0000;
+            margin-top: 0;
+            font-size: 1.6rem;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #dee2e6;
+        }
+        
+        .host-guide h3 {
+            color: #495057;
+            margin: 30px 0 20px;
+            font-size: 1.4rem;
+        }
+        
+        .host-guide h4 {
+            color: #6c757d;
+            margin: 25px 0 15px;
+            font-size: 1.2rem;
+        }
+        
+        .host-guide p {
+            margin: 20px 0;
+            font-size: 1.1rem;
+        }
+        
+        .host-guide ul, .host-guide ol {
+            margin: 20px 0;
+            padding-left: 35px;
+        }
+        
+        .host-guide li {
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+        
+        .warning {
+            background-color: #fff3cd;
+            padding: 15px;
+            border-left: 4px solid #ffc107;
+            margin: 25px 0;
+            border-radius: 5px;
+            color: #856404;
+            font-weight: bold;
+        }
+        
+        .host-guide strong {
+            color: #8b0000;
+        }
+        
+        /* 背景故事样式 */
+        .story-background {
+            background-color: #f5f5dc;
+            border-left: 4px solid #8b4513;
+            padding: 25px;
+            margin-bottom: 25px;
+            border-radius: 8px;
+            font-style: italic;
+            line-height: 1.6;
+        }
+        
+        .story-background h3 {
+            color: #8b4513;
+            margin-top: 0;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+        
+        /* 胜利消息样式 */
+        .victory-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        .victory-message {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 80%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border: 3px solid gold;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .victory-message::before {
+            content: "";
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            background: linear-gradient(45deg, 
+                rgba(255,215,0,0.2) 0%, 
+                rgba(255,255,255,0.8) 50%, 
+                rgba(255,215,0,0.2) 100%);
+            z-index: -1;
+            animation: shine 3s infinite;
+        }
+        
+        .victory-title {
+            font-size: 2.5rem;
+            color: #8b0000;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            font-weight: bold;
+        }
+        
+        .victory-text {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #333;
+            font-weight: bold;
+        }
+        
+        .victory-details {
+            font-size: 1.1rem;
+            margin-bottom: 25px;
+            color: #555;
+            line-height: 1.6;
+        }
+        
+        .victory-btn {
+            background: linear-gradient(to right, #8b0000, #a52a2a);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(139, 0, 0, 0.4);
+        }
+        
+        .victory-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(139, 0, 0, 0.6);
+        }
+        
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #f00;
+            border-radius: 50%;
+            animation: confetti 5s ease-in-out infinite;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes shine {
+            0% { transform: translateX(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) rotate(45deg); }
+        }
+        
+        @keyframes confetti {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(500px) rotate(360deg); opacity: 0; }
+        }
+        
+        /* 新添加的玩家姓名输入框样式 */
+        .player-names-input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        
+        .player-names-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .player-names-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .player-names-hint {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        /* 平板及以上尺寸 */
+        @media (min-width: 600px) {
+            .player-card {
+                width: calc(50% - 10px);
+            }
+            
+            .setting-group {
+                flex-direction: row;
+                align-items: center;
+            }
+            
+            .setting-group label {
+                min-width: 150px;
+            }
+        }
+        
+        /* 桌面尺寸 */
+        @media (min-width: 768px) {
+            body {
+                padding: 20px;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+            
+            .player-card {
+                width: calc(33.333% - 10px);
+            }
+            
+            .action-buttons {
+                justify-content: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>最后的晚餐游戏</h1>
+        
+        <!-- 背景故事部分 -->
+        <div class="story-background">
+            <h3>故事背景</h3>
+            <p>公元33年，逾越节前夕，耶路撒冷城笼罩在紧张的气氛中。耶稣与他的十二门徒共进最后的晚餐，然而在这看似平静的夜晚，暗流涌动...</p>
+            <p>祭司们早已对耶稣的教导心怀不满，暗中策划逮捕他；犹大，十二门徒之一，已被祭司收买，准备出卖他的老师；而耶稣早已预知这一切，却依然选择完成他的使命。</p>
+            <p>今晚，在这最后的晚餐上，忠诚与背叛、光明与黑暗的较量即将展开。谁能在这场心灵的博弈中胜出？谁又能坚守信仰到最后？</p>
+            <p>现在，故事将在你们手中继续...</p>
+        </div>
+        
+        <!-- 主持人指南部分 -->
+        <div class="host-guide">
+            <h2>主持人指南</h2>
+            
+            <h3>游戏三大阵营</h3>
+            <ul>
+                <li><strong>祭司阵营</strong></li>
+                <li><strong>犹大阵营</strong></li>
+                <li><strong>耶稣和门徒阵营</strong></li>
+            </ul>
+            
+            <h3>阵营获胜条件</h3>
+            <ul>
+                <li><strong>祭司阵营</strong>：耶稣被逮捕成功 + 所有门徒和特殊门徒（彼得、西门、多马、约翰）状态为驱逐或逮捕</li>
+                <li><strong>犹大阵营</strong>：耶稣被逮捕成功 + 所有祭司被驱逐 + 犹大未被驱逐</li>
+                <li><strong>耶稣和门徒阵营</strong>：驱逐所有祭司人士和犹大</li>
+            </ul>
+            
+            <h3>游戏结束条件</h3>
+            <p>任何一方阵营获胜游戏结束</p>
+            
+            <h3>游戏流程</h3>
+            <p>选择和确认时，请用手展示相应数字的玩家（比如，1代表1号玩家）</p>
+            
+            <h4>夜晚逮捕阶段</h4>
+            <p>所有人请闭眼</p>
+            <ol>
+                <li><strong>祭司请睁眼</strong> - 请确认同伴；请指认犹大；请选择要逮捕的对象，祭司请闭眼
+                    <div class="warning">注意⚠️在第3个夜晚，可以直接向主持人确认犹大</div>
+                </li>
+                <li><strong>犹大请睁眼</strong> - 请记住这是耶稣/祭司，犹大请闭眼
+                    <div class="warning">注意⚠️犹大确认完耶稣后，才可以确认祭司。每个夜晚最多确认1个人。</div>
+                </li>
+                <li><strong>耶稣请睁眼</strong> - 请记住这是犹大/祭司，耶稣请闭眼
+                    <div class="warning">注意⚠️耶稣确认完犹大后，才可以确认祭司。每个夜晚最多确认1个人。</div>
+                </li>
+            </ol>
+            
+            <h4>升级版</h4>
+            <p>3.1 <strong>彼得请睁眼</strong> - 昨晚被逮捕的是这个人，你要救吗？好的。</p>
+            
+            <h4>白天驱逐阶段</h4>
+            <p>所有人请睁眼，主持人宣布昨晚被逮捕成功的人。如果是犹大，犹大需要立刻公开身份，然后被释放返场。之后不会再被逮捕。</p>
+            <p>从1号位发言，顺时针进行，每人1分钟。所有人发言完毕后，进行公共发言3分钟。然后，开始进行驱逐投票。票数最多者被驱逐。（升级版，某些角色可以发动技能）</p>
+            <p>如果被驱逐成功的人是耶稣，耶稣需立刻公开身份，并返场。之后不会再被驱逐。</p>
+            <div class="warning">注意⚠️被驱逐成功和逮捕成功的人，夜晚仍需夜晚闭眼，白天可以继续发言，但是没有驱逐投票权。（进阶版：被逮捕的没有投票权。被驱逐的人整局中，只有1次返场投票权，并且需要有人提名和复议，复议人数不得少于在场人数的二分之一，向上取整）</div>
+            <p>如果没有阵营获胜，游戏继续进入夜晚逮捕阶段</p>
+            
+            <h3>角色说明</h3>
+            <ul>
+                <li><strong>耶稣</strong>：可以确认祭司和犹大的身份，但是不可以公开犹大的身份和投票驱逐犹大，每次夜晚可以确认一个坏人（祭司和犹大）的身份。</li>
+                <li><strong>犹大</strong>：可以确认耶稣和祭司身份，但是犹大不能把驱逐票投给耶稣。</li>
+                <li><strong>耶稣和门徒阵营</strong>：不会说谎</li>
+            </ul>
+            
+            <h3>升级一</h3>
+            <ul>
+                <li><strong>奋锐党人西门</strong>：被驱逐时，公开身份，可以带走一个人</li>
+                <li><strong>怀疑的多马</strong>：被驱逐时，公开身份，可以怀疑并公开一个人的身份</li>
+                <li><strong>约翰</strong>：被逮捕后，公开身份，以后不能逮捕，只能被驱逐</li>
+                <li><strong>彼得</strong>：被驱逐时，公开自己的身份，并否认自己是门徒，免除3次被驱逐，且接下来3个白天无法参与驱逐投票。（如果在逮捕成功后，已公开身份。只需要否认自己是门徒，然后免除3次被驱逐，且接下来3个白天无法参与驱逐投票。）彼得有一次逮捕无效技能，可以在夜晚逮捕时使用。
+                    <div class="warning">注意⚠️如果彼得已经公开身份，则失去逮捕无效技能</div>
+                </li>
+            </ul>
+            
+            <h3>升级二</h3>
+            <p>（此玩法门徒可以因为软弱，可以发动不属于自己的技能）</p>
+            <ul>
+                <li>非技能人员被驱逐或逮捕时，可发动技能（奋锐党西门，彼得，多马，约翰），但会增加质疑环节</li>
+                <li>质疑成功，被质疑者公开身份，并被驱逐</li>
+                <li>质疑失败，质疑人下一轮将不能参与驱逐投票</li>
+                <li>第二次质疑失败，质疑人立刻被驱逐</li>
+                <li>如果没有人质疑，则技能生效</li>
+            </ul>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">游戏设置</div>
+            <div class="game-settings">
+                <!-- 新增玩家姓名输入框 -->
+                <div class="setting-group">
+                    <label for="player-names" class="player-names-label">玩家姓名:</label>
+                    <input type="text" id="player-names" class="player-names-input" placeholder="输入玩家姓名，用空格分隔（例如：张三 李四 王五）">
+                    <div class="player-names-hint">输入玩家姓名，用空格分隔。姓名数量决定玩家数量，输入顺序决定玩家序号。</div>
+                </div>
+                
+                <div class="setting-group">
+                    <label for="player-count">玩家数量:</label>
+                    <div class="setting-group-row">
+                        <input type="number" id="player-count" min="4" max="20" value="12">
+                    </div>
+                </div>
+                <div class="setting-group">
+                    <label>特殊角色:</label>
+                    <div class="setting-group-row">
+                        <label for="jesus">耶稣:</label>
+                        <input type="checkbox" id="jesus" checked>
+                        
+                        <label for="judas">犹大:</label>
+                        <input type="checkbox" id="judas" checked>
+                        
+                        <label for="disciple">门徒:</label>
+                        <input type="checkbox" id="disciple" checked>
+                        
+                        <label for="peter">彼得:</label>
+                        <input type="checkbox" id="peter">
+                        
+                        <label for="simon">奋锐党人西门:</label>
+                        <input type="checkbox" id="simon">
+                        
+                        <label for="thomas">多马:</label>
+                        <input type="checkbox" id="thomas">
+                        
+                        <label for="john">约翰:</label>
+                        <input type="checkbox" id="john">
+                    </div>
+                </div>
+            </div>
+            <div class="assign-roles-container">
+                <button id="update-players">更新玩家</button>
+                <button id="assign-roles">分配角色</button>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">玩家角色</div>
+            <div class="player-list" id="player-roles"></div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">游戏流程</div>
+            <div id="phase-indicator"></div>
+            <div class="timer" id="timer">00:00</div>
+            <div class="action-buttons">
+                <button id="start-night" class="arrest-btn">夜晚逮捕</button>
+                <button id="start-day" class="expel-btn">白天驱逐</button>
+                <button id="reset-timer">重置计时器</button>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">游戏日志</div>
+            <div class="game-log" id="game-log"></div>
+            <div style="text-align: center; margin-top: 10px;">
+                <button id="clear-log">清空日志</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 游戏状态
+        const gameState = {
+            players: [],
+            phase: 'setup',
+            timer: null,
+            seconds: 0,
+            winningFaction: null,
+            roles: {
+                scribe: '祭司',
+                disciple: '门徒',
+                jesus: '耶稣',
+                judas: '犹大',
+                peter: '彼得',
+                simon: '奋锐党人西门',
+                thomas: '多马',
+                john: '约翰'
+            },
+            statusTypes: ['present', 'arrested', 'expelled', 'revealed'],
+            statusTexts: {
+                present: '在场',
+                arrested: '逮捕',
+                expelled: '驱逐',
+                revealed: '指认'
+            },
+            specialAbilities: {
+                peter: '逮捕无效',
+                simon: '被驱逐时带走一人',
+                thomas: '被驱逐时查验身份',
+                john: '被逮捕后免疫逮捕'
+            },
+            statusHistory: {
+                jesus: [],
+                judas: []
+            },
+            // 所有角色的状态顺序
+            getStatusOrder: function(role) {
+                switch(role) {
+                    case 'jesus': // 耶稣：在场、驱逐、逮捕
+                        return ['present', 'expelled', 'arrested'];
+                    case 'judas': // 犹大：在场、逮捕、驱逐
+                        return ['present', 'arrested', 'expelled'];
+                    case 'scribe': // 祭司：在场、指认、驱逐
+                        return ['present', 'revealed', 'expelled'];
+                    case 'disciple': // 门徒：在场、逮捕、驱逐
+                        return ['present', 'arrested', 'expelled'];
+                    case 'peter': // 彼得：在场、逮捕、驱逐
+                        return ['present', 'arrested', 'expelled'];
+                    case 'simon': // 西门：在场、逮捕、驱逐
+                        return ['present', 'arrested', 'expelled'];
+                    case 'thomas': // 多马：在场、逮捕、驱逐
+                        return ['present', 'arrested', 'expelled'];
+                    case 'john': // 约翰：在场、驱逐
+                        return ['present', 'expelled'];
+                    default:
+                        return ['present', 'arrested', 'expelled', 'revealed'];
+                }
+            },
+            // 新增：玩家姓名列表
+            playerNames: []
+        };
+
+        // DOM元素
+        const elements = {
+            playerNames: document.getElementById('player-names'),
+            playerCount: document.getElementById('player-count'),
+            jesusCheckbox: document.getElementById('jesus'),
+            judasCheckbox: document.getElementById('judas'),
+            discipleCheckbox: document.getElementById('disciple'),
+            peterCheckbox: document.getElementById('peter'),
+            simonCheckbox: document.getElementById('simon'),
+            thomasCheckbox: document.getElementById('thomas'),
+            johnCheckbox: document.getElementById('john'),
+            updatePlayersBtn: document.getElementById('update-players'),
+            assignRolesBtn: document.getElementById('assign-roles'),
+            playerRolesDiv: document.getElementById('player-roles'),
+            phaseIndicator: document.getElementById('phase-indicator'),
+            timerDisplay: document.getElementById('timer'),
+            startNightBtn: document.getElementById('start-night'),
+            startDayBtn: document.getElementById('start-day'),
+            resetTimerBtn: document.getElementById('reset-timer'),
+            gameLog: document.getElementById('game-log'),
+            clearLogBtn: document.getElementById('clear-log')
+        };
+
+        // 分配角色
+        elements.updatePlayersBtn.addEventListener('click', updatePlayers);
+        elements.assignRolesBtn.addEventListener('click', assignRoles);
+        elements.startNightBtn.addEventListener('click', startNightPhase);
+        elements.startDayBtn.addEventListener('click', startDayPhase);
+        elements.resetTimerBtn.addEventListener('click', resetTimer);
+        elements.clearLogBtn.addEventListener('click', clearLog);
+
+        // 初始化计时器
+        resetTimer();
+
+        // 更新玩家列表函数
+        function updatePlayers() {
+            const namesInput = elements.playerNames.value.trim();
+            
+            if (!namesInput) {
+                addLog('错误：请输入玩家姓名');
+                return;
+            }
+            
+            // 使用空格分割姓名
+            const names = namesInput.split(/\s+/).filter(name => name.length > 0);
+            
+            if (names.length < 4) {
+                addLog('错误：最少需要4名玩家');
+                return;
+            }
+            
+            if (names.length > 20) {
+                addLog('错误：最多支持20名玩家');
+                return;
+            }
+            
+            // 更新玩家数量输入框
+            elements.playerCount.value = names.length;
+            
+            // 保存玩家姓名
+            gameState.playerNames = names;
+            
+            addLog(`已更新玩家列表：${names.join('、')}，共${names.length}名玩家`);
+        }
+
+        // 分配角色函数
+        function assignRoles() {
+            let playerCount;
+            let playerNames = [];
+            
+            // 如果已经有玩家姓名列表，使用它
+            if (gameState.playerNames && gameState.playerNames.length > 0) {
+                playerCount = gameState.playerNames.length;
+                playerNames = [...gameState.playerNames];
+                addLog(`使用已输入的玩家姓名列表，共${playerCount}名玩家`);
+            } else {
+                // 否则使用玩家数量输入框的值
+                playerCount = parseInt(elements.playerCount.value);
+                
+                if (playerCount < 4) {
+                    addLog('错误：最少需要4名玩家');
+                    return;
+                }
+                
+                // 生成默认玩家姓名
+                for (let i = 0; i < playerCount; i++) {
+                    playerNames.push(`玩家 ${i + 1}`);
+                }
+            }
+            
+            gameState.players = [];
+            gameState.statusHistory = {
+                jesus: [],
+                judas: []
+            };
+            const roles = [];
+            
+            // 根据玩家数量分配角色
+            if (playerCount === 4) {
+                roles.push('jesus', 'judas', 'scribe', 'disciple');
+            } else if (playerCount === 5) {
+                roles.push('jesus', 'judas', 'scribe', 'scribe', 'disciple');
+            } else if (playerCount >= 6 && playerCount <= 11) {
+                roles.push('jesus', 'judas', 'scribe', 'scribe');
+                for (let i = 4; i < playerCount; i++) {
+                    roles.push('disciple');
+                }
+            } else {
+                const scribeCount = Math.max(2, Math.floor(playerCount / 4));
+                const discipleCount = Math.max(playerCount - 3 - scribeCount, Math.floor(playerCount / 2));
+                
+                roles.push('jesus', 'judas');
+                
+                for (let i = 0; i < scribeCount; i++) {
+                    roles.push('scribe');
+                }
+                
+                for (let i = 0; i < discipleCount; i++) {
+                    roles.push('disciple');
+                }
+                
+                while (roles.length < playerCount) {
+                    roles.push('disciple');
+                }
+            }
+            
+            // 添加特殊角色
+            if (elements.peterCheckbox.checked) {
+                const discipleIndex = roles.indexOf('disciple');
+                if (discipleIndex !== -1) {
+                    roles[discipleIndex] = 'peter';
+                }
+            }
+            
+            if (elements.simonCheckbox.checked) {
+                const discipleIndex = roles.indexOf('disciple');
+                if (discipleIndex !== -1) {
+                    roles[discipleIndex] = 'simon';
+                }
+            }
+            
+            if (elements.thomasCheckbox.checked) {
+                const discipleIndex = roles.indexOf('disciple');
+                if (discipleIndex !== -1) {
+                    roles[discipleIndex] = 'thomas';
+                }
+            }
+            
+            if (elements.johnCheckbox.checked) {
+                const discipleIndex = roles.indexOf('disciple');
+                if (discipleIndex !== -1) {
+                    roles[discipleIndex] = 'john';
+                }
+            }
+            
+            // 随机分配角色
+            shuffleArray(roles);
+            
+            // 创建玩家对象
+            for (let i = 0; i < playerCount; i++) {
+                gameState.players.push({
+                    id: i + 1,
+                    role: roles[i],
+                    status: 'present',
+                    name: playerNames[i],
+                    skills: {
+                        peter: roles[i] === 'peter' ? {used: false} : null,
+                        simon: roles[i] === 'simon' ? {used: false} : null,
+                        thomas: roles[i] === 'thomas' ? {used: false} : null,
+                        john: roles[i] === 'john' ? {used: false} : null
+                    }
+                });
+            }
+            
+            // 显示角色分配
+            displayPlayerRoles();
+            
+            // 计算各角色数量
+            const roleCounts = {};
+            roles.forEach(role => {
+                roleCounts[role] = (roleCounts[role] || 0) + 1;
+            });
+            
+            let logMessage = `已为 ${playerCount} 名玩家分配角色：`;
+            for (const [role, count] of Object.entries(roleCounts)) {
+                logMessage += `${gameState.roles[role]} ${count}人，`;
+            }
+            addLog(logMessage.slice(0, -1));
+        }
+
+        // 显示玩家角色
+        function displayPlayerRoles() {
+            elements.playerRolesDiv.innerHTML = '';
+            
+            gameState.players.forEach(player => {
+                const card = document.createElement('div');
+                card.className = `player-card ${player.status}`;
+                
+                // 构建技能按钮HTML
+                let skillsHtml = '';
+                if (player.role === 'peter' && !player.skills.peter.used && player.status !== 'revealed') {
+                    skillsHtml += `<button class="skill-btn" onclick="useSkill(${player.id}, 'peter')">使用逮捕无效</button>`;
+                }
+                if (player.role === 'simon' && !player.skills.simon.used && player.status === 'expelled') {
+                    skillsHtml += `<button class="skill-btn" onclick="useSkill(${player.id}, 'simon')">选择带走一人</button>`;
+                }
+                if (player.role === 'thomas' && !player.skills.thomas.used && player.status === 'expelled') {
+                    skillsHtml += `<button class="skill-btn" onclick="useSkill(${player.id}, 'thomas')">查验一人身份</button>`;
+                }
+                if (player.role === 'john' && !player.skills.john.used && player.status === 'arrested') {
+                    skillsHtml += `<button class="skill-btn" onclick="useSkill(${player.id}, 'john')">使用免疫逮捕</button>`;
+                }
+                
+                // 在玩家姓名前添加序号
+                card.innerHTML = `
+                    <div class="player-name">${player.id}. ${player.name}</div>
+                    <div class="role">角色: ${gameState.roles[player.role]}</div>
+                    <div class="status ${player.status}">状态: ${gameState.statusTexts[player.status]}</div>
+                    <input type="text" class="name-input" placeholder="输入玩家姓名" value="${player.name}">
+                    ${skillsHtml}
+                `;
+                
+                // 添加点击事件切换玩家状态
+                card.addEventListener('click', (e) => {
+                    if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
+                    
+                    const statusOrder = gameState.getStatusOrder(player.role);
+                    const currentIndex = statusOrder.indexOf(player.status);
+                    let nextIndex = (currentIndex + 1) % statusOrder.length;
+                    
+                    player.status = statusOrder[nextIndex];
+                    
+                    // 记录状态变更历史
+                    if (player.role === 'jesus' || player.role === 'judas') {
+                        gameState.statusHistory[player.role].push({
+                            status: player.status,
+                            timestamp: Date.now(),
+                            message: `${player.name} 状态变更为: ${gameState.statusTexts[player.status]}`
+                        });
+                    }
+                    
+                    // 如果彼得状态变为指认，移除逮捕无效技能
+                    if (player.role === 'peter' && player.status === 'revealed') {
+                        player.skills.peter.used = true;
+                        addLog(`${player.name} (彼得) 已指认身份，失去逮捕无效技能`);
+                    }
+                    
+                    // 更新卡片样式和文本
+                    card.className = `player-card ${player.status}`;
+                    const statusElement = card.querySelector('.status');
+                    statusElement.className = `status ${player.status}`;
+                    statusElement.textContent = `状态: ${gameState.statusTexts[player.status]}`;
+                    
+                    addLog(`${player.name} 状态变更为: ${gameState.statusTexts[player.status]}`);
+                    
+                    // 检查获胜条件
+                    checkWinConditions();
+                    
+                    // 重新渲染玩家列表
+                    displayPlayerRoles();
+                });
+                
+                // 添加姓名输入框事件
+                const nameInput = card.querySelector('.name-input');
+                nameInput.addEventListener('change', (e) => {
+                    const newName = e.target.value.trim() || `玩家 ${player.id}`;
+                    player.name = newName;
+                    card.querySelector('.player-name').textContent = `${player.id}. ${newName}`;
+                    addLog(`玩家 ${player.id} 姓名变更为: ${newName}`);
+                });
+                
+                elements.playerRolesDiv.appendChild(card);
+            });
+        }
+
+        // 检查获胜条件
+        function checkWinConditions() {
+            // 检查祭司阵营获胜条件：耶稣被逮捕 + 所有门徒和特殊门徒状态为驱逐或逮捕
+            const jesusArrested = gameState.players.some(p => p.role === 'jesus' && p.status === 'arrested');
+            const allDisciplesHandled = gameState.players
+                .filter(p => p.role === 'disciple' || 
+                            p.role === 'peter' || 
+                            p.role === 'simon' || 
+                            p.role === 'thomas' || 
+                            p.role === 'john')
+                .every(p => p.status === 'arrested' || p.status === 'expelled');
+            
+            if (jesusArrested && allDisciplesHandled) {
+                gameState.winningFaction = 'scribe';
+                showVictoryMessage('祭司阵营获胜！耶稣被逮捕并处理了所有门徒（包括特殊门徒）');
+                return true;
+            }
+            
+            // 检查犹大阵营获胜条件：耶稣被逮捕 + 所有祭司被驱逐 + 犹大未被驱逐
+            const allScribesExpelled = gameState.players
+                .filter(p => p.role === 'scribe')
+                .every(p => p.status === 'expelled');
+            
+            const judasNotExpelled = gameState.players
+                .some(p => p.role === 'judas' && p.status !== 'expelled');
+            
+            if (jesusArrested && allScribesExpelled && judasNotExpelled) {
+                gameState.winningFaction = 'judas';
+                showVictoryMessage('犹大阵营获胜！耶稣被逮捕后所有祭司被驱逐且犹大未被驱逐');
+                return true;
+            }
+            
+            // 检查耶稣和门徒阵营获胜条件：所有祭司和犹大被驱逐
+            const allOpponentsExpelled = gameState.players
+                .filter(p => p.role === 'scribe' || p.role === 'judas')
+                .every(p => p.status === 'expelled');
+            
+            if (allOpponentsExpelled) {
+                gameState.winningFaction = 'jesus';
+                showVictoryMessage('耶稣和门徒阵营获胜！驱逐了所有祭司和犹大');
+                return true;
+            }
+            
+            return false;
+        }
+
+        // 显示获胜消息
+        function showVictoryMessage(message) {
+            const overlay = document.createElement('div');
+            overlay.className = 'victory-overlay';
+            
+            const victoryDiv = document.createElement('div');
+            victoryDiv.className = 'victory-message';
+            
+            let victoryDetails = '';
+            if (gameState.winningFaction === 'scribe') {
+                victoryDetails = `
+                    <div class="victory-details">
+                        <p>祭司阵营通过以下方式取得了胜利：</p>
+                        <ul>
+                            <li>耶稣被成功逮捕</li>
+                            <li>所有门徒和特殊门徒（彼得、西门、多马、约翰）状态为驱逐或逮捕</li>
+                        </ul>
+                    </div>
+                `;
+            } else if (gameState.winningFaction === 'judas') {
+                victoryDetails = `
+                    <div class="victory-details">
+                        <p>犹大阵营通过以下方式取得了胜利：</p>
+                        <ul>
+                            <li>耶稣被成功逮捕</li>
+                            <li>所有祭司被成功驱逐</li>
+                            <li>犹大未被驱逐</li>
+                        </ul>
+                    </div>
+                `;
+            } else if (gameState.winningFaction === 'jesus') {
+                victoryDetails = `
+                    <div class="victory-details">
+                        <p>耶稣和门徒阵营通过以下方式取得了胜利：</p>
+                        <ul>
+                            <li>驱逐了所有祭司人士</li>
+                            <li>驱逐了犹大</li>
+                        </ul>
+                    </div>
+                `;
+            }
+            
+            victoryDiv.innerHTML = `
+                <div class="victory-title">🎉 游戏结束 🎉</div>
+                <div class="victory-text">${message}</div>
+                ${victoryDetails}
+                <button class="victory-btn" onclick="resetGame()">重新开始</button>
+            `;
+            
+            // 添加彩色纸屑效果
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.top = Math.random() * 100 + '%';
+                confetti.style.backgroundColor = getRandomColor();
+                confetti.style.animationDelay = Math.random() * 2 + 's';
+                confetti.style.width = Math.random() * 10 + 5 + 'px';
+                confetti.style.height = Math.random() * 10 + 5 + 'px';
+                overlay.appendChild(confetti);
+            }
+            
+            overlay.appendChild(victoryDiv);
+            document.body.appendChild(overlay);
+            
+            if (gameState.timer) clearInterval(gameState.timer);
+            
+            addLog(`游戏结束：${message}`);
+        }
+
+        // 获取随机颜色
+        function getRandomColor() {
+            const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ff8800', '#8800ff'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        // 重置游戏
+        function resetGame() {
+            const overlay = document.querySelector('.victory-overlay');
+            if (overlay) overlay.remove();
+            
+            gameState.players = [];
+            gameState.phase = 'setup';
+            gameState.winningFaction = null;
+            gameState.statusHistory = {
+                jesus: [],
+                judas: []
+            };
+            resetTimer();
+            
+            elements.playerRolesDiv.innerHTML = '';
+            clearLog();
+            
+            addLog('游戏已重置，可以重新分配角色');
+        }
+
+        // 使用技能函数
+        function useSkill(playerId, skillType) {
+            const player = gameState.players.find(p => p.id === playerId);
+            if (!player || !player.skills[skillType] || player.skills[skillType].used) return;
+            
+            player.skills[skillType].used = true;
+            
+            switch(skillType) {
+                case 'peter':
+                    player.status = 'present';
+                    addLog(`${player.name} (彼得) 使用了逮捕无效技能，状态恢复为在场`);
+                    break;
+                    
+                case 'simon':
+                    addLog(`${player.name} (奋锐党人西门) 使用了被驱逐时带走一人的技能`);
+                    break;
+                    
+                case 'thomas':
+                    addLog(`${player.name} (多马) 使用了被驱逐时查验一人身份的技能`);
+                    break;
+                    
+                case 'john':
+                    player.status = 'present';
+                    addLog(`${player.name} (约翰) 使用了免疫逮捕技能，状态恢复为在场`);
+                    break;
+            }
+            
+            checkWinConditions();
+            displayPlayerRoles();
+        }
+
+        // 开始夜晚阶段
+        function startNightPhase() {
+            gameState.phase = 'night';
+            elements.phaseIndicator.innerHTML = '<div class="night-phase">夜晚阶段 - 祭司进行逮捕</div>';
+            addLog('进入夜晚逮捕阶段，祭司选择要逮捕的目标');
+            resetTimer();
+            startTimer();
+        }
+
+        // 开始白天阶段
+        function startDayPhase() {
+            gameState.phase = 'day';
+            elements.phaseIndicator.innerHTML = '<div class="day-phase">白天阶段 - 讨论并投票驱逐</div>';
+            addLog('进入白天驱逐阶段，玩家讨论并投票决定驱逐谁');
+            resetTimer();
+            startTimer();
+        }
+
+        // 计时器功能
+        function startTimer() {
+            if (gameState.timer) clearInterval(gameState.timer);
+            gameState.timer = setInterval(updateTimer, 1000);
+        }
+
+        function updateTimer() {
+            gameState.seconds++;
+            const minutes = Math.floor(gameState.seconds / 60);
+            const seconds = gameState.seconds % 60;
+            elements.timerDisplay.textContent = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function resetTimer() {
+            if (gameState.timer) clearInterval(gameState.timer);
+            gameState.seconds = 0;
+            elements.timerDisplay.textContent = '00:00';
+        }
+
+        // 日志功能
+        function addLog(message) {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.textContent = `[${timeString}] ${message}`;
+            elements.gameLog.appendChild(logEntry);
+            elements.gameLog.scrollTop = elements.gameLog.scrollHeight;
+        }
+
+        function clearLog() {
+            elements.gameLog.innerHTML = '';
+            addLog('日志已清空');
+        }
+
+        // 辅助函数：随机打乱数组
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+        
+        // 全局暴露useSkill函数
+        window.useSkill = useSkill;
+        window.resetGame = resetGame;
+    </script>
+</body>
+</html>
