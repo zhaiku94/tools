@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的离线笔记 - 加密增强版</title>
+    <style>
+        :root { --primary: #3498db; --success: #27ae60; --bg: #f8f9fa; --sidebar: 180px; }
+        body { font-family: sans-serif; margin: 0; display: flex; height: 100vh; background: #f8f9fa; overflow: hidden; }
+        #sidebar { width: var(--sidebar); background: #fff; border-right: 1px solid #ddd; display: flex; flex-direction: column; transition: 0.3s; z-index: 1000; }
+        @media (max-width: 768px) { #sidebar { position: fixed; height: 100%; transform: translateX(-100%); } #sidebar.active { transform: translateX(0); box-shadow: 5px 0 15px rgba(0,0,0,0.1); } }
+        #sidebar h2 { padding: 20px; margin: 0; font-size: 1.1rem; border-bottom: 1px solid #eee; }
+        #toc-list { flex-grow: 1; overflow-y: auto; }
+        .toc-item { padding: 12px 20px; cursor: pointer; font-size: 14px; color: #555; border-bottom: 1px solid #f9f9f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .toc-item:hover { background: #f0f7ff; color: var(--primary); }
+        
+        #main-content { flex-grow: 1; overflow-y: auto; padding: 0 20px 20px; scroll-behavior: instant }
+        .header-fixed-wrap { position: sticky; top: 0; background: var(--bg); z-index: 100; width: 100%; padding-top: 20px; }
+        .header-actions { max-width: 800px; margin: 0 auto; display: flex; align-items: center; gap: 10px; background: var(--bg); padding: 10px 0 20px 0; }
+        
+        #notes-container { padding-top: 10px; min-height: 100vh; }
+        .btn-group { display: flex; gap: 8px; margin-left: auto; }
+        button { border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 13px; }
+        .add-btn { background: var(--primary); color: white; }
+        .save-btn { background: var(--success); color: white; }
+        .mode-btn { background: #eee; color: #333; }
+        .clear-btn { background: #e74c3c; color: white; }
+        .menu-btn { display: none; background: none; font-size: 24px; padding: 0; cursor: pointer; }
+        @media (max-width: 768px) { .menu-btn { display: block; } }
+
+        .note-card {
+            background: white; max-width: 800px; margin: 0 auto 20px; padding: 25px; border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-left: 5px solid var(--primary);
+            position: relative; scroll-margin-top: 100px; 
+        }
+        .note-content { outline: none; min-height: 100px; line-height: 1.8; white-space: pre-wrap; word-break: break-word; font-size: 16px; color: #333; }
+        .delete-btn { position: absolute; top: 10px; right: 10px; background: #ff7675; color: white; padding: 4px 10px; font-size: 11px; border-radius: 4px; cursor: pointer; opacity: 0; }
+        .note-card:hover .delete-btn { opacity: 1; }
+        body.view-mode .add-btn, body.view-mode .delete-btn { display: none; }
+        body.view-mode .note-card { border-left-color: var(--success); }
+        #overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 999; }
+        #overlay.active { display: block; }
+
+/* 新增格式化相关样式 */
+.format-group { display: flex; gap: 4px; align-items: center; }
+.format-group button { 
+    background: #fff; border: 1px solid #ddd; color: #555; 
+    padding: 5px 10px; min-width: 35px; 
+}
+.format-group button:hover { background: #f0f0f0; }
+
+/* 内容区域内的标题样式 */
+.note-content h2 { margin: 10px 0 5px; color: #2c3e50; font-size: 1.4rem; border-bottom: 1px solid #eee; }
+.note-content h3 { margin: 8px 0 4px; color: #34495e; font-size: 1.1rem; }
+.note-content p { margin: 5px 0; }
+
+    </style>
+</head>
+<body>
+
+<div id="overlay" onclick="NoteApp.toggleSidebar()"></div>
+<nav id="sidebar">
+    <h2>目录</h2>
+    <div id="toc-list"></div>
+</nav>
+<main id="main-content">
+    <div class="header-fixed-wrap">
+        <div class="header-actions">
+            <button class="menu-btn" onclick="NoteApp.toggleSidebar()">☰</button>
+            <h1 style="margin:0; font-size: 1.3rem;">日志</h1>
+            <div class="format-group">
+        <button onclick="NoteApp.exec('bold')" title="加粗"><b>B</b></button>
+        <button onclick="NoteApp.exec('italic')" title="斜体"><i>I</i></button>
+        <button onclick="NoteApp.exec('formatBlock', 'h2')">H1</button>
+        <button onclick="NoteApp.exec('formatBlock', 'h3')">H2</button>
+        <button onclick="NoteApp.exec('formatBlock', 'p')">正文</button>
+    </div>
+            <div class="btn-group">
+                <button class="mode-btn" onclick="NoteApp.toggleMode(this)">预览</button>
+                <button class="add-btn" onclick="NoteApp.add()">新增</button>
+                <button class="save-btn" onclick="NoteApp.export()">保存</button>
+                <button class="clear-btn" onclick="NoteApp.clearAll()">清空</button>
+            </div>
+        </div>
+    </div>
+    <div id="notes-container"></div>
+</main>
+
+<script id="app-data">
+    // 数据存储点
+    window.NOTE_DATA_STORE = /*DATA_START*/ [] /*DATA_END*/;
+</script>
+
+<script id="main-logic">
+window.NoteApp = {
+    isView: false,
+
+    init() {
+        const container = document.getElementById('notes-container');
+        container.innerHTML = '';
+        const local = JSON.parse(localStorage.getItem('my_stable_notes_v4') || '[]');
+        const finalData = (window.NOTE_DATA_STORE && window.NOTE_DATA_STORE.length > 0) ? window.NOTE_DATA_STORE : local;
+
+        if (finalData.length === 0) {
+            this.add("# 欢迎使用\n在此输入内容。点击【保存】时可设置密码。请务必保存！否则下次打开内容会清空⚠️");
+        } else {
+            localStorage.setItem('my_stable_notes_v4', JSON.stringify(finalData));
+            finalData.forEach(item => this.render(item.id, item.text));
+        }
+        this.updateTOC();
+    },
+
+    render(id, text) {
+        const card = document.createElement('div');
+        card.className = 'note-card';
+        card.id = id;
+        // 注意：这里 innerHTML 渲染 text 字符串中的 HTML 标签
+        card.innerHTML = `<button class="delete-btn" onclick="NoteApp.remove('${id}')">删除</button>
+                          <div class="note-content" contenteditable="${!this.isView}" 
+                               oninput="NoteApp.save(); NoteApp.updateTOC()">${text}</div>`;
+        document.getElementById('notes-container').appendChild(card);
+    },
+
+    add(text = " ") {
+        const id = 'n' + Date.now();
+        this.render(id, text);
+        this.save();
+        this.updateTOC();
+        document.getElementById(id).querySelector('.note-content').focus();
+    },
+
+    remove(id) {
+        if(confirm('确定删除？')) {
+            document.getElementById(id).remove();
+            this.save();
+            this.updateTOC();
+        }
+    },
+
+    exec(command, value = null) {
+        // 确保焦点在编辑区
+        document.execCommand(command, false, value);
+    },
+
+    save() {
+        const data = Array.from(document.querySelectorAll('.note-card')).map(c => ({
+            id: c.id,
+            text: c.querySelector('.note-content').innerHTML // 改用 innerHTML
+        }));
+        localStorage.setItem('my_stable_notes_v4', JSON.stringify(data));
+        return data;
+    },
+
+    updateTOC() {
+        const list = document.getElementById('toc-list');
+        list.innerHTML = '';
+        document.querySelectorAll('.note-card').forEach(c => {
+            const title = c.querySelector('.note-content').innerText.split('\n')[0] || "未命名";
+            const item = document.createElement('div');
+            item.className = 'toc-item';
+            item.innerText = title;
+            item.onclick = () => {
+                c.scrollIntoView({ behavior: 'instant' });
+                if(window.innerWidth <= 768) this.toggleSidebar();
+            };
+            list.appendChild(item);
+        });
+    },
+
+    toggleMode(btn) {
+        this.isView = !this.isView;
+        document.body.classList.toggle('view-mode');
+        document.querySelectorAll('.note-content').forEach(el => el.setAttribute('contenteditable', !this.isView));
+        btn.innerText = this.isView ? "编辑模式" : "预览模式";
+    },
+
+    toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('active');
+        document.getElementById('overlay').classList.toggle('active');
+    },
+
+    async export() {
+
+        
+        const data = this.save();
+        const dataStr = JSON.stringify(data);
+        const password = prompt("请输入加密密码（留空则导出不加密的普通版）:");
+        
+        const now = new Date();
+const dateStr = now.getFullYear() + 
+                        (now.getMonth() + 1).toString().padStart(2, '0') + 
+                        now.getDate().toString().padStart(2, '0') + 
+                        now.getHours().toString().padStart(2, '0') + 
+                        now.getMinutes().toString().padStart(2, '0');        const styleContent = document.querySelector('style').innerHTML;
+       
+       const headSection = `
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            <title>我的离线笔记</title>
+            <style>${styleContent}</style>
+        `;
+       
+       
+        const logicScript = document.getElementById('main-logic').innerHTML;
+// --- 关键修改：动态获取 body 内容，确保 format-group 按钮被包含 ---
+    const bodyStructure = document.body.innerHTML.split('<script')[0];
+        let finalDoc = "";
+
+        if (!password) {
+            // --- 普通导出逻辑 ---
+            finalDoc = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>${headSection}</head>
+<body>${bodyStructure}
+<script id="app-data">window.NOTE_DATA_STORE = ${dataStr};<\/script>
+<script id="main-logic">${logicScript}\nwindow.onload = () => NoteApp.init();<\/script>
+</body></html>`;
+        } else {
+            // --- 加密导出逻辑 ---
+            const enc = new TextEncoder();
+            const salt = window.crypto.getRandomValues(new Uint8Array(16));
+            const keyMaterial = await window.crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
+            const key = await window.crypto.subtle.deriveKey(
+                { name: "PBKDF2", salt: salt, iterations: 100000, hash: "SHA-256" },
+                keyMaterial, { name: "AES-GCM", length: 256 }, false, ["encrypt"]
+            );
+            const iv = window.crypto.getRandomValues(new Uint8Array(12));
+            const fullContent = `<!DOCTYPE html><html lang="zh-CN">
+            <head>${headSection}</head>            
+            <body>${bodyStructure}<script id="app-data">window.NOTE_DATA_STORE = ${dataStr};<\/script><script id="main-logic">${logicScript}\nwindow.onload = () => NoteApp.init();<\/script></body></html>`;
+            const encrypted = await window.crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, enc.encode(fullContent));
+
+            const exportObj = {
+                ciphertext: btoa(String.fromCharCode(...new Uint8Array(encrypted))),
+                iv: btoa(String.fromCharCode(...iv)),
+                salt: btoa(String.fromCharCode(...salt))
+            };
+
+            finalDoc = `<!DOCTYPE html><html>
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>已加密的笔记</title>
+            </head>
+<body style="background:#f0f2f5;font-family:sans-serif;display:flex;justify-content:center;padding-top:100px;">
+<div style="background:white;padding:40px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.1);text-align:center;">
+    <h2>🔒 笔记已加密</h2><p>请输入密码以解锁内容</p>
+    <input type="password" id="unlock-pw" onkeyup="if(event.key==='Enter') unlock()" style="padding:10px;width:200px;border:1px solid #ddd;border-radius:8px;margin-bottom:10px;font-size:16px;"><br>
+    <button onclick="unlock()" style="padding:10px 20px;background:#3498db;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:bold;">解密并进入</button>
+</div>
+<script>
+const payload = ${JSON.stringify(exportObj)};
+async function unlock() {
+    try {
+        const pw = document.getElementById('unlock-pw').value;
+        const enc = new TextEncoder();
+        const keyMaterial = await window.crypto.subtle.importKey("raw", enc.encode(pw), "PBKDF2", false, ["deriveKey"]);
+        const key = await window.crypto.subtle.deriveKey(
+            { name: "PBKDF2", salt: Uint8Array.from(atob(payload.salt), c => c.charCodeAt(0)), iterations: 100000, hash: "SHA-256" },
+            keyMaterial, { name: "AES-GCM", length: 256 }, false, ["decrypt"]
+        );
+        const decrypted = await window.crypto.subtle.decrypt(
+            { name: "AES-GCM", iv: Uint8Array.from(atob(payload.iv), c => c.charCodeAt(0)) },
+            key, Uint8Array.from(atob(payload.ciphertext), c => c.charCodeAt(0))
+        );
+        document.open(); document.write(new TextDecoder().decode(decrypted)); document.close();
+    } catch(e) { alert("密码错误，解密失败！"); }
+}
+<\/script></body></html>`;
+        }
+
+        const blob = new Blob([finalDoc], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href =url;
+        a.download = `${dateStr}_${password ? '加密版' : '普通版'}.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    },
+
+    clearAll() {
+        if (confirm('⚠️ 确定要清空所有本地笔记吗？')) {
+            localStorage.removeItem('my_stable_notes_v4');
+            window.NOTE_DATA_STORE = [];
+            location.reload();
+        }
+    }
+};
+
+window.onload = () => NoteApp.init();
+</script>
+</body>
+</html>

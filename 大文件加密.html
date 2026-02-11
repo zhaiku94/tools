@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>AES-256 本地文件加密工具</title>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; line-height: 1.6; background: #f4f7f6; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { color: #2c3e50; margin-top: 0; }
+        input, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid #ddd; box-sizing: border-box; }
+        button { background: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; }
+        button:hover { background: #0056b3; }
+        #status { font-size: 0.9em; color: #666; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>🔐 AES-256 本地加密</h2>
+    <p style="font-size: 0.85em; color: #e67e22;">注意：文件在浏览器本地处理，绝不会上传到服务器。</p>
+    
+    <input type="file" id="fileInput">
+    <input type="password" id="password" placeholder="输入加密密码">
+    <button onclick="processFile('encrypt')">加密并下载</button>
+    <button onclick="processFile('decrypt')" style="background: #28a745;">解密并下载</button>
+    
+    <div id="status">等待操作...</div>
+</div>
+
+<script>
+    // 派生密钥函数 (PBKDF2)
+    async function deriveKey(password, salt) {
+        const encoder = new TextEncoder();
+        const baseKey = await crypto.subtle.importKey(
+            "raw", encoder.encode(password), "PBKDF2", false, ["deriveKey"]
+        );
+        return crypto.subtle.deriveKey(
+            { name: "PBKDF2", salt: salt, iterations: 100000, hash: "SHA-256" },
+            baseKey,
+            { name: "AES-GCM", length: 256 },
+            false,
+            ["encrypt", "decrypt"]
+        );
+    }
+
+    async function processFile(mode) {
+        const fileInput = document.getElementById('fileInput');
+        const password = document.getElementById('password').value;
+        const status = document.getElementById('status');
+
+        if (!fileInput.files[0] || !password) {
+            alert("请选择文件并输入密码");
+            return;
+        }
+
+        const file = fileInput.files[0];
+        status.innerText = "正在处理中，请稍候...";
+
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            let resultBuffer;
+            let fileName = file.name;
+
+            if (mode === 'encrypt') {
+                const salt = crypto.getRandomValues(new Uint8Array(16));
+                const iv = crypto.getRandomValues(new Uint8Array(12));
+                const key = await deriveKey(password, salt);
+                
+                const encryptedContent = await crypto.subtle.encrypt(
+                    { name: "AES-GCM", iv: iv },
+                    key,
+                    arrayBuffer
+                );
+
+                // 拼接最终文件：Salt(16) + IV(12) + Content
+                resultBuffer = new Uint8Array(salt.byteLength + iv.byteLength + encryptedContent.byteLength);
+                resultBuffer.set(salt, 0);
+                resultBuffer.set(iv, 16);
+                resultBuffer.set(new Uint8Array(encryptedContent), 28);
+                fileName += ".enc";
+
+            } else {
+                const data = new Uint8Array(arrayBuffer);
+                const salt = data.slice(0, 16);
+                const iv = data.slice(16, 28);
+                const content = data.slice(28);
+                const key = await deriveKey(password, salt);
+
+                const decryptedContent = await crypto.subtle.decrypt(
+                    { name: "AES-GCM", iv: iv },
+                    key,
+                    content
+                );
+                resultBuffer = decryptedContent;
+                fileName = fileName.replace(".enc", "");
+            }
+
+            // 下载处理后的文件
+            const blob = new Blob([resultBuffer]);
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            a.click();
+            status.innerText = mode === 'encrypt' ? "加密成功！" : "解密成功！";
+
+        } catch (e) {
+            console.error(e);
+            status.innerText = "错误：密码错误或文件损坏。";
+        }
+    }
+</script>
+
+</body>
+</html>

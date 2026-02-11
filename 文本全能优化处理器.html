@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文本全能优化处理器</title>
+    <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
+    <style>
+        :root { --primary: #007AFF; --bg: #f5f7fa; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); padding: 20px; color: #333; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        h2 { text-align: center; margin-bottom: 25px; color: #1d1d1f; }
+        textarea { width: 100%; height: 180px; padding: 15px; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; margin-bottom: 15px; resize: vertical; }
+        .config-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; background: #f9f9fb; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+        .checkbox-group { display: flex; align-items: center; font-size: 14px; cursor: pointer; }
+        .checkbox-group input { margin-right: 8px; }
+        .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
+        button { flex: 1; padding: 12px 20px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; min-width: 120px; }
+        .btn-main { background: var(--primary); color: white; }
+        .btn-main:hover { background: #0056b3; }
+        .btn-translate { background: #34c759; color: white; }
+        .btn-translate:hover { background: #28a745; }
+        .btn-secondary { background: #e5e5ea; color: #333; }
+        .output-label { margin-top: 25px; font-weight: bold; display: block; border-left: 4px solid var(--primary); padding-left: 10px; }
+        .result-box { margin-top: 10px; padding: 20px; background: #fff; border: 1px dashed #ccc; border-radius: 10px; min-height: 100px; white-space: pre-wrap; word-break: break-all; }
+        #loading { display: none; color: var(--primary); font-size: 14px; margin-left: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>文本全能优化处理器</h2>
+    
+    <textarea id="inputText" placeholder="在此输入或粘贴文本..."></textarea>
+
+    <div class="config-panel">
+        <label class="checkbox-group"><input type="checkbox" id="cleanSpace" checked> 彻底清除所有无效空格</label>
+        <label class="checkbox-group"><input type="checkbox" id="fixLines" checked> 智能修复断行(合并段落)</label>
+        <label class="checkbox-group"><input type="checkbox" id="toSimp" checked> 繁体转简体</label>
+        <label class="checkbox-group"><input type="checkbox" id="standardPunct" checked> 标点符号规范化</label>
+    </div>
+
+    <div class="btn-group">
+        <button class="btn-main" onclick="processText('zh')">优化中文内容</button>
+        <button class="btn-translate" onclick="processText('en')">优化并翻译为英文</button>
+        <button class="btn-secondary" onclick="copyText()">复制结果</button>
+        <button class="btn-secondary" onclick="clearAll()">清空</button>
+    </div>
+
+    <span class="output-label">处理结果：<span id="loading">正在处理中...</span></span>
+    <div id="outputText" class="result-box"></div>
+</div>
+
+<script>
+    const converter = OpenCC.Converter({ from: 't', to: 'cn' });
+
+    async function processText(mode) {
+        let text = document.getElementById('inputText').value.trim();
+        if (!text) return alert("内容不能为空");
+        
+        document.getElementById('loading').style.display = 'inline';
+        
+        // 1. 强力清除空格逻辑
+        // \s 匹配空格, \u3000 全角空格, \u00a0 不换行空格, \u200b 零宽空格
+        if (document.getElementById('cleanSpace').checked) {
+            // 先处理中文之间的空格，保留英文单词间的单个空格
+            text = text.replace(/([\u4e00-\u9fa5])[\s\u3000\u00a0\u200b]+(?=[\u4e00-\u9fa5])/g, '$1');
+            // 清理行首行尾
+            text = text.split('\n').map(s => s.trim()).join('\n');
+        }
+
+        // 2. 智能合并断行
+        if (document.getElementById('fixLines').checked) {
+            const lines = text.split(/\n+/);
+            let merged = "";
+            const endMarks = /[。！？；…!?;.]$/;
+            lines.forEach((line, index) => {
+                merged += line;
+                if (endMarks.test(line) || index === lines.length - 1) {
+                    merged += "\n\n";
+                }
+            });
+            text = merged.trim();
+        }
+
+        // 3. 繁简转换
+        if (document.getElementById('toSimp').checked) {
+            text = converter(text);
+        }
+
+        // 4. 标点规范化
+        if (document.getElementById('standardPunct').checked) {
+            text = text.replace(/,/g, '，').replace(/\!(?!\s)/g, '！').replace(/\?(?!\s)/g, '？');
+        }
+
+        // 5. 模式选择：仅优化 or 翻译
+        if (mode === 'en') {
+            try {
+                text = await translateToEn(text);
+            } catch (e) {
+                alert("翻译接口异常，请稍后再试");
+            }
+        }
+
+        document.getElementById('outputText').innerText = text;
+        document.getElementById('loading').style.display = 'none';
+    }
+
+    // 调用免费翻译接口 (Google Translate API 镜像)
+    async function translateToEn(text) {
+        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q=${encodeURIComponent(text)}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        // 拼接翻译结果
+        return data[0].map(item => item[0]).join('');
+    }
+
+    function copyText() {
+        const res = document.getElementById('outputText').innerText;
+        if(!res) return;
+        navigator.clipboard.writeText(res).then(() => alert("已复制到剪贴板"));
+    }
+
+    function clearAll() {
+        document.getElementById('inputText').value = '';
+        document.getElementById('outputText').innerText = '';
+    }
+</script>
+
+</body>
+</html>

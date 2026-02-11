@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>卡通万能计时器-完美对齐版</title>
+<style>
+:root{
+  --bg:#ffecd2;
+  --bg2:#fcb69f;
+  --fg:#2c2c54;
+  --accent:#ff6f61;
+  --accent2:#ffcc5c;
+  --success:#6ab04c;
+  --danger:#ff3f34;
+  --card-bg: rgba(255, 255, 255, 0.5);
+}
+body{
+  margin:0; min-height:100vh;
+  background:linear-gradient(135deg,var(--bg),var(--bg2));
+  color:var(--fg);
+  font-family:'Comic Sans MS', 'PingFang SC', sans-serif;
+  display:flex;flex-direction:column;align-items:center;padding: 20px;
+}
+
+.header-tools { margin-bottom: 30px; display: flex; gap: 15px; position: sticky; top: 20px; z-index: 100; }
+
+.timer-container { 
+  display: grid; 
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); 
+  gap: 25px; width: 100%; max-width: 1200px; 
+}
+
+.timer-card {
+  background: var(--card-bg);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border-radius: 30px; padding: 25px;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+  border: 2px solid rgba(255,255,255,0.6);
+  position: relative; display: flex; flex-direction: column; align-items: center;
+}
+
+.timer-name {
+  background: transparent; border: none; border-bottom: 2px dashed var(--accent);
+  font-size: 1.3rem; font-weight: bold; color: var(--fg);
+  text-align: center; width: 80%; margin-bottom: 15px; outline: none;
+}
+
+/* --- 核心优化：删除按钮正圆且居中 --- */
+button.del-btn { 
+  background: var(--danger); 
+  color: white; 
+  position: absolute; 
+  top: -12px; 
+  right: -12px; 
+  border-radius: 50%; 
+  width: 32px;      /* 固定的宽度 */
+  height: 32px;     /* 固定的高度，需与宽度一致 */
+  padding: 0; 
+  font-size: 20px;  /* 叉号大小 */
+  line-height: 0;   /* 消除行高影响 */
+  display: flex;    /* 使用 flex 布局 */
+  align-items: center;     /* 垂直居中 */
+  justify-content: center;  /* 水平居中 */
+  cursor: pointer;
+  border: 2px solid white;  /* 增加白色描边让它更立体 */
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  transition: transform 0.2s;
+}
+button.del-btn:hover { transform: scale(1.1) rotate(90deg); }
+
+.mode-switch {
+  display: flex; background: rgba(0,0,0,0.05); border-radius: 12px; padding: 4px; margin-bottom: 15px;
+}
+.mode-switch button {
+  padding: 5px 15px; font-size: 0.8rem; border-radius: 8px; box-shadow: none;
+  background: transparent; color: var(--fg);
+}
+.mode-switch button.active { background: var(--fg); color: white; }
+
+/* 修复数字抖动 */
+.display { 
+  font-size: 3.8rem; 
+  font-weight: 900; 
+  text-align: center; 
+  margin: 10px 0;
+  font-variant-numeric: tabular-nums;
+  font-family: 'Consolas', 'Courier New', monospace;
+  min-width: 260px;
+}
+
+.flash { animation: flash 0.6s linear infinite alternate; }
+@keyframes flash { from{color:var(--fg);} to{color:var(--danger);} }
+
+.progress { height:12px; width: 100%; background:rgba(255,255,255,0.4); border-radius:10px; margin:15px 0; overflow:hidden; }
+.bar { height:100%; width:0%; background:linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 0.1s linear; }
+
+.controls, .inputs { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom:10px; }
+.inputs label { font-size: 0.8rem; display: flex; flex-direction: column; align-items: center; }
+.inputs input { width:55px; padding:8px; border-radius:10px; border:1px solid rgba(0,0,0,0.1); text-align:center; font-size: 1rem; }
+
+button {
+  border:none; border-radius:18px; padding:10px 20px; font-size:0.95rem; font-weight:bold;
+  cursor:pointer; transition:0.2s; box-shadow:0 4px 6px rgba(0,0,0,0.1);
+}
+button.primary { background:var(--accent); color:white; }
+button.secondary { background:var(--accent2); color:var(--fg); }
+button.add-btn { background: var(--success); color: white; }
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="header-tools">
+  <button id="addTimerBtn" class="add-btn">➕ 添加新计时器</button>
+  <button id="muteBtn" class="secondary">🔊 铃声开启</button>
+</div>
+
+<div id="timersWrapper" class="timer-container"></div>
+
+<script>
+let globalMuted = false;
+let timerCount = 0;
+const timersWrapper = document.getElementById('timersWrapper');
+
+class Timer {
+  constructor(id) {
+    this.id = id;
+    this.mode = 'down';
+    this.totalMs = 60000;
+    this.currentMs = 60000;
+    this.running = false;
+    this.timer = null;
+    this.startTime = null;
+    this.pausedMs = 0;
+    this.defaultName = `任务 ${this.id}`;
+    this.createDom();
+  }
+
+  createDom() {
+    const card = document.createElement('div');
+    card.className = 'timer-card';
+    card.innerHTML = `
+      <button class="del-btn">×</button>
+      <input type="text" class="timer-name" value="${this.defaultName}">
+      <div class="mode-switch">
+        <button class="mode-down active">倒计时</button>
+        <button class="mode-up">正计时</button>
+      </div>
+      <div class="display">01:00</div>
+      <div class="progress"><div class="bar"></div></div>
+      <div class="inputs">
+        <label>时<input type="number" class="h" min="0" value="0"></label>
+        <label>分<input type="number" class="m" min="0" max="59" value="1"></label>
+        <label>秒<input type="number" class="s" min="0" max="59" value="0"></label>
+      </div>
+      <div class="controls">
+        <button class="start primary">开始</button>
+        <button class="pause secondary hidden">暂停</button>
+        <button class="reset secondary">重置</button>
+      </div>
+    `;
+
+    this.dom = {
+      card,
+      nameInput: card.querySelector('.timer-name'),
+      display: card.querySelector('.display'),
+      bar: card.querySelector('.bar'),
+      inputsArea: card.querySelector('.inputs'),
+      h: card.querySelector('.h'), m: card.querySelector('.m'), s: card.querySelector('.s'),
+      btnStart: card.querySelector('.start'),
+      btnPause: card.querySelector('.pause'),
+      btnReset: card.querySelector('.reset'),
+      btnDown: card.querySelector('.mode-down'),
+      btnUp: card.querySelector('.mode-up')
+    };
+
+    this.dom.nameInput.onfocus = () => { if (this.dom.nameInput.value === this.defaultName) this.dom.nameInput.value = ''; };
+    this.dom.nameInput.onblur = () => { if (this.dom.nameInput.value.trim() === '') this.dom.nameInput.value = this.defaultName; else this.defaultName = this.dom.nameInput.value; };
+
+    this.dom.btnDown.onclick = () => this.switchMode('down');
+    this.dom.btnUp.onclick = () => this.switchMode('up');
+    this.dom.btnStart.onclick = () => this.start();
+    this.dom.btnPause.onclick = () => this.pause();
+    this.dom.btnReset.onclick = () => this.reset();
+    card.querySelector('.del-btn').onclick = () => this.destroy();
+
+    timersWrapper.appendChild(card);
+    this.updateView();
+  }
+
+  switchMode(newMode) {
+    if (this.running) return;
+    this.mode = newMode;
+    this.dom.btnDown.classList.toggle('active', this.mode === 'down');
+    this.dom.btnUp.classList.toggle('active', this.mode === 'up');
+    this.dom.inputsArea.classList.toggle('hidden', this.mode === 'up');
+    this.reset();
+  }
+
+  updateView() {
+    const t = Math.floor(Math.abs(this.currentMs) / 1000);
+    const h = Math.floor(t / 3600);
+    const m = Math.floor((t % 3600) / 60);
+    const s = t % 60;
+    const pad = n => n.toString().padStart(2, "0");
+    
+    this.dom.display.textContent = `${h > 0 ? h+':' : ''}${pad(m)}:${pad(s)}`;
+    
+    if (this.mode === 'down') {
+      const progress = this.totalMs > 0 ? (1 - this.currentMs / this.totalMs) : 1;
+      this.dom.bar.style.width = `${100 * progress}%`;
+      this.dom.display.classList.toggle("flash", this.currentMs <= 10000 && this.currentMs > 0 && this.running);
+    } else {
+      this.dom.bar.style.width = `${((this.currentMs / 1000) % 60) / 60 * 100}%`;
+    }
+  }
+
+  start() {
+    if (this.running) return;
+    if (this.mode === 'down' && (!this.pausedMs || this.currentMs <= 0)) {
+      const h = +this.dom.h.value || 0, m = +this.dom.m.value || 0, s = +this.dom.s.value || 0;
+      this.totalMs = (h * 3600 + m * 60 + s) * 1000;
+      if (this.totalMs <= 0) return;
+      this.currentMs = this.totalMs;
+    }
+    this.running = true;
+    this.startTime = Date.now();
+    const initialMs = this.currentMs;
+    this.timer = setInterval(() => {
+      const elapsed = Date.now() - this.startTime;
+      this.currentMs = (this.mode === 'down') ? initialMs - elapsed : initialMs + elapsed;
+      if (this.mode === 'down' && this.currentMs <= 0) { this.currentMs = 0; this.complete(); }
+      this.updateView();
+    }, 100);
+    this.dom.btnStart.classList.add('hidden');
+    this.dom.btnPause.classList.remove('hidden');
+  }
+
+  pause() {
+    this.running = false;
+    this.pausedMs = this.currentMs;
+    clearInterval(this.timer);
+    this.dom.btnStart.classList.remove('hidden');
+    this.dom.btnPause.classList.add('hidden');
+  }
+
+  complete() { this.pause(); if (!globalMuted) this.beep(); }
+  reset() { this.pause(); this.pausedMs = 0; this.currentMs = (this.mode === 'down') ? this.totalMs : 0; this.updateView(); }
+  destroy() { this.pause(); this.dom.card.remove(); }
+
+  beep() {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + 0.5);
+  }
+}
+
+function createNewTimer() { timerCount++; new Timer(timerCount); }
+document.getElementById('addTimerBtn').onclick = createNewTimer;
+document.getElementById('muteBtn').onclick = function() {
+  globalMuted = !globalMuted;
+  this.textContent = globalMuted ? "🔇 已静音" : "🔊 铃声开启";
+};
+createNewTimer();
+</script>
+</body>
+</html>

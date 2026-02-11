@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>属灵传FY风格测试（带图表与图片导出）</title>
+  <style>
+    :root{--bg:#f8fafc;--card:#fff;--muted:#6b7280;--accent:#0ea5a4;}
+    body{font-family:"PingFang SC",system-ui,-apple-system,Segoe UI,Helvetica,Arial,sans-serif;background:var(--bg);margin:0;padding:24px;color:#111;}
+    .container{max-width:980px;margin:0 auto;}
+    .card{background:var(--card);border-radius:12px;padding:20px;box-shadow:0 6px 18px rgba(18,22,31,0.06);border:1px solid rgba(15,23,42,0.04);}
+    h1{margin:0 0 10px;font-size:22px;}
+    p.lead{margin:0 0 18px;color:var(--muted);}
+    .q{padding:12px 0;border-bottom:1px solid #eef2f7;}
+    .q:last-child{border-bottom:none}
+    .q .title{font-size:14px;}
+    .opts{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;}
+    label.opt{cursor:pointer;border:1px solid #e6edf0;padding:6px 10px;border-radius:8px;background:#fff;}
+    label.opt input{margin-right:6px;}
+    .controls{margin-top:18px;display:flex;gap:10px;flex-wrap:wrap}
+    button{cursor:pointer;border:0;padding:10px 14px;border-radius:8px;font-weight:600;background:var(--accent);color:#fff;transition:background 0.2s}
+    button:hover{background:#09948f}
+    button.secondary{background:#e6eef0;color:#08303a}
+    .results{margin-top:22px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+    .score-card{background:#fff;padding:12px;border-radius:10px;border:1px solid #eef2f7}
+    .score-card .label{color:var(--muted);font-size:13px}
+    .score-card .value{font-size:20px;font-weight:700;margin-top:6px}
+    .analysis{margin-top:12px;padding:12px;background:#f8fafb;border-radius:8px;border:1px dashed #e6eef0}
+    .small{font-size:13px;color:var(--muted)}
+    footer{margin-top:18px;font-size:13px;color:var(--muted)}
+    canvas{margin-top:20px;max-height:360px;}
+    @media (max-width:600px){body{padding:12px}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>属灵传FY风格测试</h1>
+      <p class="lead">共 42 题，选择最符合你的频率。点击“查看结果”后可查看分析与图表，并可保存为 PDF 或图片。</p>
+
+      <form id="testForm" autocomplete="off">
+        <div id="questions"></div>
+
+        <div class="controls">
+          <button type="button" id="calcBtn">查看结果</button>
+          <button type="button" id="resetBtn" class="secondary">重置</button>
+          <button type="button" id="printBtn" class="secondary">打印 / 保存为 PDF</button>
+          <button type="button" id="saveImgBtn" class="secondary">保存结果为图片</button>
+        </div>
+
+        <div id="results" class="results" hidden>
+          <h3>分数与分析</h3>
+          <div class="grid" id="scoreGrid"></div>
+          <canvas id="resultChart"></canvas>
+          <div class="analysis" id="analysisBox"></div>
+        </div>
+      </form>
+
+      <footer>
+        版权 © 2025 | 简约风格属灵传FY测试
+      </footer>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script>
+  (function(){
+    const questions=[
+      "我享受跟别人分享我是怎么成为JDT的。","我喜欢邀请别人过来吃晚餐，然后我总是希望可以聊到XY的话题。","我喜欢和思考深入，问好问题的人一起探讨生命的意义。","我喜欢帮助别人。我不需要在聚光灯下。","我对人很直接，有的时候我会激怒别人。","我不是很外向，在和别人分享我的XY时我比较拘谨。","我喜欢当时就为他人DG。","当我跟别人讲JD在我生命中所做的工作时，别人很喜欢听。","我不怎么提到我的XY。我更喜欢别人谈XY。","我喜欢读挑战我思想的书。我想要在小组讨论里有所贡献。","我更喜欢实际地办法而非理论性的。","对我来说很难直接跟别人讲他们需要YS。","在我提到XY这个话题之前，我尽量了解这个人在他的日常生活中正在面对什么。","如果我认识的人状态不太好，我通常会问他们怎么了，并主动提出为他们DG。","对我来说不难分享我过去犯过的错误，如果这些可以帮助别人的话。","如果我听到一个好的传FY的活动，我会尝试邀请人和我一起参加。","我想要明白一个人所表达观点背后真正的理由是什么。","如果我可以选择，我宁愿跟别人讲话，而非动手做事情。","我的做法是：每个人需要听到YSJD，即使是不对的时间和地点。","和理论相比，我对日常生活更感兴趣。","我相信S现今仍然在行神迹，并且他想要透过我来行神迹。","别人觉得我分享我生活中的故事和我的XY见证是很有意思的事情。","如果我觉得一个活动很有意思的话，那我会享受邀请别人参加。","我不愿意和人有深入的讨论。我喜欢分享我自己的经历。","我有时在帮助别人的时候，不知不觉谈起来属灵的话题。","我很直接，喜欢挑战人，即使当这样做的时候这份关系会受到挑战。","个人关系和友谊对我来说非常重要。","我常常DG我的朋友们还有我认识的人可以认识YS。","当我和别人聊天时，我常常会加入我个人的故事来解释一个概念或是支持我的想法。","对我来说邀请人参加JDT的活动很尴尬。","发现生命和XY当中那些难题的答案，这个过程我很享受。","我很敏感，常常能感觉到别人没有直接说或者大声说出来的事情。","虽然真理有时会伤人，但大声说出来很重要。","对我来说很容易与他人连接，并建立关系。","我喜欢为别人DG，喜欢和别人一起DG。","对我来说很难和别人分享我个人与YS的经历。","我常常邀请别人参加我教会或是XY团体的活动。","我享受很活跃地和别人讨论有挑战的话题。","我更喜欢帮助别人，而不是带领一个讨论或是对别人讲道。","我看到就说，不会拐弯抹角。","我的朋友们中有透过我听过YS的FY或者归信了YS。","我发现为别人DG很难，有时我必须得推自己去做。"
+    ];
+    const reverseIndices=[6,12,18,23,28,36,42];
+    const categories={
+      "见证型":[1,8,15,22,29,36],
+      "邀请型":[2,9,16,23,30,37],
+      "思辨型":[3,10,17,24,31,38],
+      "服侍型":[4,11,18,25,32,39],
+      "直接型":[5,12,19,26,33,40],
+      "关系型":[6,13,20,27,34,41],
+      "DG型":[7,14,21,28,35,42]
+    };
+    const options=[{label:"总是",value:5},{label:"常常",value:4},{label:"有时",value:2},{label:"很少",value:1},{label:"从不",value:0}];
+
+    const qContainer=document.getElementById("questions");
+    questions.forEach((t,i)=>{
+      const q=document.createElement("div");q.className="q";
+      const title=document.createElement("div");title.className="title";title.textContent=`${i+1}. ${t}`;q.appendChild(title);
+      const opts=document.createElement("div");opts.className="opts";
+      options.forEach(o=>{
+        const id=`q${i+1}_${o.value}`;
+        const label=document.createElement("label");
+        label.className="opt";
+        label.innerHTML=`<input type="radio" name="q${i+1}" id="${id}" value="${o.value}"> ${o.label}`;
+        opts.appendChild(label);
+      });
+      q.appendChild(opts);
+      qContainer.appendChild(q);
+    });
+
+    const getAnswers=()=>Array.from({length:42},(_,i)=>{
+      const sel=document.querySelector(`input[name='q${i+1}']:checked`);
+      return sel?Number(sel.value):null;
+    });
+
+    function compute(ans){
+      const eff=ans.map((v,i)=>{
+        const val=v===null?0:v;
+        return reverseIndices.includes(i+1)?5-val:val;
+      });
+      const catEff={};
+      for(const [k,idxs]of Object.entries(categories)){
+        let e=0;
+        idxs.forEach(n=>{e+=eff[n-1]||0});
+        catEff[k]=Math.round((e/(6*5))*100);
+      }
+      return{catEff};
+    }
+
+    let chart;
+    function showResults(){
+      const ans=getAnswers();
+      const{catEff}=compute(ans);
+      const grid=document.getElementById("scoreGrid");
+      grid.innerHTML="";
+      for(const[k,v]of Object.entries(catEff)){
+        const div=document.createElement("div");
+        div.className="score-card";
+        div.innerHTML=`<div class='label'>${k}</div><div class='value'>${v}</div><div class='small'>${v}%</div>`;
+        grid.appendChild(div);
+      }
+      const order=Object.entries(catEff).map(([k,v])=>({k,v})).sort((a,b)=>b.v-a.v);
+      const top1=order[0],top2=order[1];
+      const desc={
+        "见证型":"喜欢用个人见证来分享FY，讲故事和生命改变对你有力量。",
+        "邀请型":"擅长邀请别人并在活动中带人进入XY环境。",
+        "思辨型":"喜欢深入讨论、逻辑与思想层面的对话。",
+        "服侍型":"通过实际帮助与服事显示JD的爱，行动胜于言辞。",
+        "直接型":"直截了当，不怕挑战别人，坦率表达真理。",
+        "关系型":"重视人与人之间的关系，通过建立信任来分享XY。",
+        "DG型":"常以DG作为开路，信赖属灵操练在传FY中的力量。"
+      };
+      const box=document.getElementById("analysisBox");
+      box.innerHTML=`<div><strong>首要风格：</strong>${top1.k}（${top1.v}%）</div>
+                     <div style='margin-top:6px'><strong>次要风格：</strong>${top2.k}（${top2.v}%）</div>
+                     <div style='margin-top:10px'><strong>解读：</strong>${desc[top1.k]}</div>
+                     <div class='small' style='margin-top:6px'>辅助风格：${desc[top2.k]}</div>`;
+      document.getElementById("results").hidden=false;
+
+      const ctx=document.getElementById("resultChart");
+      const labels=Object.keys(catEff);
+      const data=Object.values(catEff);
+      if(chart) chart.destroy();
+      chart=new Chart(ctx,{
+        type:"bar",
+        data:{labels,datasets:[{label:"风格强度（%）",data,borderRadius:8,backgroundColor:"rgba(14,165,164,0.8)"}]},
+        options:{scales:{y:{beginAtZero:true,max:100,ticks:{stepSize:20}},x:{ticks:{color:"#334155"}}},plugins:{legend:{display:false},tooltip:{callbacks:{label:(ctx)=>`${ctx.parsed.y}%`}}}}
+      });
+      window.scrollTo({top:document.getElementById("results").offsetTop-20,behavior:"smooth"});
+    }
+
+    document.getElementById("calcBtn").onclick=showResults;
+    document.getElementById("resetBtn").onclick=()=>{
+      document.querySelectorAll("input[type=radio]").forEach(i=>i.checked=false);
+      document.getElementById("results").hidden=true;
+    };
+    document.getElementById("printBtn").onclick=()=>{
+      if(document.getElementById("results").hidden){showResults();setTimeout(()=>window.print(),500);}
+      else window.print();
+    };
+
+    document.getElementById("saveImgBtn").onclick=()=>{
+      const results=document.getElementById("results");
+      if(results.hidden){showResults();}
+      setTimeout(()=>{
+        html2canvas(results,{scale:2}).then(canvas=>{
+          const link=document.createElement("a");
+          link.download="属灵传FY风格测试结果.png";
+          link.href=canvas.toDataURL("image/png");
+          link.click();
+        });
+      },500);
+    };
+  })();
+  </script>
+</body>
+</html>

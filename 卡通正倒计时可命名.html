@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>沉浸式计时器-修复版</title>
+  <style>
+    :root {
+      --bg-color: #f0f2f5;
+      --text-color: #4a4a4a;
+      --accent-color: #7c92ff;
+      --glass-bg: rgba(255, 255, 255, 0.8);
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--bg-color);
+      font-family: "SF Pro Rounded", "PingFang SC", "Segoe UI", "Arial Rounded MT Bold", sans-serif;
+      color: var(--text-color);
+      overflow: hidden;
+      transition: all 0.5s ease;
+    }
+
+    /* 新增：计时器名称样式 */
+    .timer-title-container {
+      position: absolute;
+      top: 60px; /* 位于模式标签下方 */
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      width: 80%;
+      text-align: center;
+    }
+    .timer-title {
+      background: transparent;
+      border: none;
+      border-bottom: 1px dashed #ccc;
+      color: var(--text-color);
+      font-size: 24px;
+      text-align: center;
+      width: 100%;
+      outline: none;
+      padding: 5px;
+      transition: all 0.3s;
+    }
+    .timer-title:focus {
+      border-bottom-color: var(--accent-color);
+    }
+
+    .mode-tag {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: var(--glass-bg);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      color: #999;
+      z-index: 10;
+    }
+
+    #display {
+      font-size: 25vmin;
+      font-weight: 200;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      margin: 0;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 5;
+      text-align: center;
+      width: 100%;
+    }
+
+    .bottom-panel {
+      position: fixed;
+      bottom: 20px;
+      width: 90%;
+      max-width: 500px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 28px;
+      padding: 16px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      z-index: 100;
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s;
+    }
+
+    .time-inputs { display: flex; align-items: center; gap: 6px; opacity: 0.6; }
+    .time-inputs input { width: 45px; background: rgba(0,0,0,0.04); border: none; padding: 6px; border-radius: 8px; text-align: center; font-size: 18px; outline: none; }
+
+    .btn-group { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; width: 100%; }
+    button { background: rgba(0,0,0,0.05); color: var(--text-color); border: none; padding: 12px 16px; border-radius: 14px; font-size: 14px; cursor: pointer; transition: all 0.2s; }
+    .play-btn { background: var(--accent-color); color: white; font-weight: 600; min-width: 90px; }
+
+    /* 全屏模式修复 */
+    :fullscreen body { background-color: #000; color: #fff; }
+    :fullscreen .mode-tag { display: none; }
+    :fullscreen #display { 
+        font-size: 35vmin;
+        margin-top: 0; 
+    }
+    /* 全屏下的标题样式 */
+    :fullscreen .timer-title {
+        color: #fff;
+        border-bottom-color: rgba(255,255,255,0.2);
+    }
+    
+    .is-hidden { transform: translateY(150%); opacity: 0; pointer-events: none; }
+    .timeout { animation: blink 1s infinite; color: #ff7c7c !important; }
+    @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+
+    #fullscreenBtn.in-fs {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      z-index: 1001;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="mode-tag"><span id="modeText">倒计时</span>模式</div>
+
+  <!-- 新增：名称输入区域 -->
+  <div class="timer-title-container">
+    <input type="text" class="timer-title" placeholder="点击输入任务名称..." maxlength="20">
+  </div>
+
+  <div id="display">00:00:00</div>
+
+  <div class="bottom-panel" id="panel">
+    <div class="time-inputs" id="inputArea">
+      <input type="number" id="hours" min="0" value="0"><span>h</span>
+      <input type="number" id="minutes" min="0" value="5"><span>m</span>
+      <input type="number" id="seconds" min="0" value="0"><span>s</span>
+    </div>
+
+    <div class="btn-group" id="presetArea">
+      <button onclick="setPreset(300)">5m</button>
+      <button onclick="setPreset(1500)">25m</button>
+      <button onclick="setPreset(3600)">1h</button>
+    </div>
+
+    <div class="btn-group">
+      <button id="toggleMode">🔄 模式</button>
+      <button id="startBtn" class="play-btn">开始</button>
+      <button id="pauseBtn">暂停</button>
+      <button id="resetBtn">重置</button>
+      <button id="fullscreenBtn">⛶ 全屏</button>
+    </div>
+  </div>
+
+  <audio id="alarmSound"><source src="https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3"></audio>
+
+  <script>
+    let timeLeft = 300;
+    let timerId = null;
+    let isCountdown = true;
+    let isStarted = false;
+
+    const display = document.getElementById('display');
+    const panel = document.getElementById('panel');
+    const startBtn = document.getElementById('startBtn');
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const alarmSound = document.getElementById('alarmSound');
+
+    function updateDisplay(secs) {
+      const s = Math.abs(secs);
+      const h = Math.floor(s / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      const sec = s % 60;
+      display.textContent = [h, m, sec].map(v => v.toString().padStart(2, '0')).join(':');
+    }
+
+    function startTimer() {
+      if (!isStarted && isCountdown) {
+        const h = parseInt(document.getElementById('hours').value) || 0;
+        const m = parseInt(document.getElementById('minutes').value) || 0;
+        const s = parseInt(document.getElementById('seconds').value) || 0;
+        timeLeft = h * 3600 + m * 60 + s;
+      }
+      if (timeLeft <= 0 && isCountdown) return;
+      isStarted = true;
+      timerId = setInterval(() => {
+        if (isCountdown) {
+          if (timeLeft <= 0) {
+            clearInterval(timerId);
+            display.classList.add('timeout');
+            alarmSound.play();
+            return;
+          }
+          timeLeft--;
+        } else {
+          timeLeft++;
+        }
+        updateDisplay(timeLeft);
+      }, 1000);
+      startBtn.textContent = "运行中";
+    }
+
+    function stopTimer() {
+      clearInterval(timerId);
+      timerId = null;
+      startBtn.textContent = "继续";
+    }
+
+    function resetTimer() {
+      stopTimer();
+      isStarted = false;
+      display.classList.remove('timeout');
+      timeLeft = isCountdown ? 300 : 0;
+      updateDisplay(timeLeft);
+      startBtn.textContent = "开始";
+    }
+
+    function setPreset(sec) {
+      resetTimer();
+      timeLeft = sec;
+      updateDisplay(timeLeft);
+    }
+
+    startBtn.addEventListener('click', () => timerId ? stopTimer() : startTimer());
+    document.getElementById('pauseBtn').addEventListener('click', stopTimer);
+    document.getElementById('resetBtn').addEventListener('click', resetTimer);
+
+    document.getElementById('toggleMode').addEventListener('click', () => {
+      isCountdown = !isCountdown;
+      document.getElementById('modeText').textContent = isCountdown ? "倒计时" : "正计时";
+      document.getElementById('inputArea').style.visibility = isCountdown ? "visible" : "hidden";
+      document.getElementById('presetArea').style.display = isCountdown ? "flex" : "none";
+      resetTimer();
+    });
+
+    fullscreenBtn.addEventListener('click', () => {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+      const isFs = !!document.fullscreenElement;
+      if (isFs) {
+        panel.classList.add('is-hidden');
+        fullscreenBtn.classList.add('in-fs');
+        fullscreenBtn.textContent = "退出";
+        document.body.appendChild(fullscreenBtn);
+      } else {
+        panel.classList.remove('is-hidden');
+        fullscreenBtn.classList.remove('in-fs');
+        fullscreenBtn.textContent = "⛶ 全屏";
+        document.querySelector('.btn-group:last-child').appendChild(fullscreenBtn);
+      }
+    });
+
+    display.addEventListener('click', () => {
+      if (!document.fullscreenElement) panel.classList.toggle('is-hidden');
+    });
+
+    updateDisplay(timeLeft);
+  </script>
+</body>
+</html>

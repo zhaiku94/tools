@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZIP 安全加密/解密工具</title>
+    <style>
+        :root { --primary: #2563eb; --secondary: #10b981; --bg: #f8fafc; }
+        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
+        h2 { margin-top: 0; color: #1e293b; text-align: center; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { flex: 1; padding: 10px; border: none; background: #e2e8f0; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .tab-btn.active { background: var(--primary); color: white; }
+        .input-group { margin-bottom: 1.2rem; }
+        label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: #475569; }
+        input[type="file"], input[type="password"] { width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 6px; box-sizing: border-box; }
+        button#mainBtn { width: 100%; padding: 0.75rem; background: var(--primary); color: white; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; }
+        #status { margin-top: 1rem; font-size: 0.875rem; text-align: center; color: #64748b; min-height: 1.25rem; }
+        .progress-bar { height: 6px; background: #e2e8f0; margin-top: 10px; display: none; border-radius: 3px; overflow: hidden; }
+        .progress-inner { height: 100%; background: var(--primary); width: 0%; transition: width 0.3s; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="tabs">
+        <button class="tab-btn active" id="modeEnc" onclick="switchMode('enc')">加密文件</button>
+        <button class="tab-btn" id="modeDec" onclick="switchMode('dec')">解密 ZIP</button>
+    </div>
+
+    <h2 id="title">AES-256 加密压缩</h2>
+    
+    <div class="input-group">
+        <label id="fileLabel">选择多个文件</label>
+        <input type="file" id="fileInput" multiple>
+    </div>
+
+    <div class="input-group">
+        <label>请输入密码</label>
+        <input type="password" id="password" placeholder="用于加密或解密的密码">
+    </div>
+
+    <button id="mainBtn" onclick="handleProcess()">开始执行</button>
+
+    <div class="progress-bar" id="progressBox"><div class="progress-inner" id="progressBar"></div></div>
+    <div id="status">文件在本地处理，绝不上传</div>
+</div>
+
+<script type="module">
+    import { ZipWriter, ZipReader, BlobWriter, BlobReader } from "https://unpkg.com/@zip.js/zip.js/index.js";
+
+    let currentMode = 'enc';
+
+    // 切换模式 UI
+    window.switchMode = function(mode) {
+        currentMode = mode;
+        document.getElementById('modeEnc').classList.toggle('active', mode === 'enc');
+        document.getElementById('modeDec').classList.toggle('active', mode === 'dec');
+        document.getElementById('title').innerText = mode === 'enc' ? 'AES-256 加密压缩' : '解密并重打不加密包';
+        document.getElementById('fileLabel').innerText = mode === 'enc' ? '选择多个文件' : '选择已加密的 ZIP';
+        document.getElementById('fileInput').multiple = (mode === 'enc');
+        document.getElementById('mainBtn').style.background = mode === 'enc' ? '#2563eb' : '#10b981';
+    }
+
+    window.handleProcess = async function() {
+        const fileInput = document.getElementById('fileInput');
+        const password = document.getElementById('password').value;
+        const btn = document.getElementById('mainBtn');
+        const status = document.getElementById('status');
+        const progressBox = document.getElementById('progressBox');
+        const progressBar = document.getElementById('progressBar');
+
+        if (fileInput.files.length === 0 || !password) {
+            alert("请提供文件和密码！");
+            return;
+        }
+
+        btn.disabled = true;
+        progressBox.style.display = 'block';
+        progressBar.style.width = '0%';
+
+        try {
+            const outputBlobWriter = new BlobWriter("application/zip");
+            const zipWriter = new ZipWriter(outputBlobWriter);
+
+            if (currentMode === 'enc') {
+                // --- 加密逻辑 ---
+                const files = Array.from(fileInput.files);
+                for (let i = 0; i < files.length; i++) {
+                    status.innerText = `正在加密: ${files[i].name}`;
+                    await zipWriter.add(files[i].name, new BlobReader(files[i]), { password: password });
+                    progressBar.style.width = ((i + 1) / files.length * 100) + '%';
+                }
+            } else {
+                // --- 解密再重打包逻辑 ---
+                const zipFile = fileInput.files[0];
+                const zipReader = new ZipReader(new BlobReader(zipFile));
+                const entries = await zipReader.getEntries();
+                
+                for (let i = 0; i < entries.length; i++) {
+                    const entry = entries[i];
+                    if (!entry.directory) {
+                        status.innerText = `正在解密并转移: ${entry.filename}`;
+                        try {
+                            // 使用密码读取原始文件流
+                            const decryptedBlob = await entry.getData(new BlobWriter(), { password: password });
+                            // 将解密后的流存入新的无密码 ZIP
+                            await zipWriter.add(entry.filename, new BlobReader(decryptedBlob));
+                        } catch (err) {
+                            throw new Error("密码错误或 ZIP 格式不支持 (仅限标准 AES/ZipCrypto)");
+                        }
+                    }
+                    progressBar.style.width = ((i + 1) / entries.length * 100) + '%';
+                }
+                await zipReader.close();
+            }
+
+            const finalBlob = await zipWriter.close();
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(finalBlob);
+            link.download = currentMode === 'enc' ? "encrypted.zip" : "decrypted_unlocked.zip";
+            link.click();
+            status.innerText = "✅ 处理成功！";
+        } catch (err) {
+            status.innerText = "❌ 失败: " + err.message;
+        } finally {
+            btn.disabled = false;
+        }
+    }
+</script>
+</body>
+</html>

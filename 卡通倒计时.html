@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>卡通大字倒计时器</title>
+<style>
+:root{
+  --bg:#ffecd2; /* 卡通暖色背景 */
+  --bg2:#fcb69f; /* 渐变色 */
+  --fg:#2c2c54; /* 主文字颜色 */
+  --accent:#ff6f61; /* 主按钮颜色 */
+  --accent2:#ffcc5c; /* 第二按钮颜色 */
+  --danger:#ff3f34; /* 警告颜色 */
+}
+body{
+  margin:0;
+  min-height:100vh;
+  background:linear-gradient(135deg,var(--bg),var(--bg2));
+  color:var(--fg);
+  font-family:'Comic Sans MS',Arial,sans-serif;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+}
+h1{font-size:2rem;margin-bottom:1rem;text-shadow:2px 2px #fff7; text-align:center;}
+.display{
+  font-size:12vw;
+  font-weight:900;
+  text-align:center;
+  letter-spacing:3px;
+  margin-bottom:60px;
+  text-shadow:4px 4px #fff3;
+}
+.flash{animation:flash 0.8s linear infinite alternate;}
+@keyframes flash{from{color:var(--fg);}to{color:var(--danger);}}
+.progress{height:12px;width:80%;background:rgba(255,255,255,0.3);border-radius:999px;margin:20px auto;overflow:hidden;}
+.bar{height:100%;width:0%;background:linear-gradient(90deg,#ff6f61,#ffcc5c);border-radius:999px;}
+.sub, .controls, .presets{
+  display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:10px;
+}
+button{
+  border:none;border-radius:20px;padding:12px 20px;font-size:1rem;font-weight:bold;
+  cursor:pointer;transition:0.2s;box-shadow:2px 2px 5px rgba(0,0,0,0.2);
+}
+button:hover{transform:translateY(-2px) scale(1.05);}
+button.primary{background:var(--accent);color:white;}
+button.secondary{background:var(--accent2);color:#2c2c54;}
+button.danger{background:var(--danger);color:white;}
+.controls input{width:80px;padding:10px;font-size:1.1rem;text-align:center;border-radius:12px;border:none;}
+.presets button{background:rgba(255,255,255,0.3);color:#2c2c54;padding:6px 12px;font-size:0.9rem;}
+.presets button:hover{background:rgba(255,255,255,0.5);}
+</style>
+</head>
+<body>
+
+<h1>🎉 卡通倒计时器 🎉</h1>
+<div id="display" class="display">00:01:00</div>
+<div class="progress"><div id="bar" class="bar"></div></div>
+
+<div class="sub">
+  <button id="start" class="primary">开始</button>
+  <button id="pause" class="secondary">暂停</button>
+  <button id="reset" class="secondary">重置</button>
+  <button id="addMin" class="secondary">+1 分钟</button>
+  <button id="add10s" class="secondary">+10 秒</button>
+  <button id="mute" class="secondary">🔊</button>
+  <button id="fullscreen" class="secondary">全屏</button>
+</div>
+
+<div class="controls">
+  <label>小时 <input id="h" type="number" min="0" max="99" value="0"></label>
+  <label>分钟 <input id="m" type="number" min="0" max="59" value="1"></label>
+  <label>秒 <input id="s" type="number" min="0" max="59" value="0"></label>
+</div>
+
+<div class="presets">
+  <button data-sec="300">5 分钟</button>
+  <button data-sec="600">10 分钟</button>
+  <button data-sec="900">15 分钟</button>
+  <button data-sec="1800">30 分钟</button>
+</div>
+
+<audio id="bgm" loop autoplay>
+  <source src="https://cdn.jsdelivr.net/gh/itwsmusic/soft-bgm@main/soft-bgm.mp3" type="audio/mpeg">
+  你的浏览器不支持音频播放。
+</audio>
+
+<script>
+const hEl=h,mEl=m,sEl=s,disp=display,bar=document.getElementById("bar");
+const btnStart=start,btnPause=pause,btnReset=reset,btnAddMin=addMin,btnAdd10s=add10s,btnMute=mute,btnFs=fullscreen;
+const presetBtns=document.querySelectorAll(".presets button");
+const bgm=document.getElementById("bgm");
+
+let totalMs=60000,remainMs=60000,endTime=null,timer=null,running=false,muted=false;
+const beep=()=>{if(muted)return;const a=new AudioContext();const o=a.createOscillator();const g=a.createGain();o.connect(g);g.connect(a.destination);o.type="sine";o.frequency.value=880;g.gain.setValueAtTime(0.1,a.currentTime);o.start();o.stop(a.currentTime+0.2);};
+function fmt(ms){if(ms<0)ms=0;const t=Math.floor(ms/1000),h=Math.floor(t/3600),m=Math.floor((t%3600)/60),s=t%60;const pad=n=>n.toString().padStart(2,"0");return h>0?`${h}:${pad(m)}:${pad(s)}`:`${pad(m)}:${pad(s)}`;}
+function updateView(){disp.textContent=fmt(remainMs);bar.style.width=`${100*(1-remainMs/totalMs)}%`;disp.classList.toggle("flash",remainMs<=10000&&running);}
+function setFromInput(){const h=+hEl.value||0,m=+mEl.value||0,s=+sEl.value||0;totalMs=(h*3600+m*60+s)*1000;if(totalMs<1000)totalMs=1000;remainMs=totalMs;updateView();}
+function startTimer(){if(running)return;if(remainMs<=0)setFromInput();running=true;endTime=Date.now()+remainMs;timer=setInterval(()=>{remainMs=endTime-Date.now();if(remainMs<=0){remainMs=0;stopTimer(true);}updateView();},100);}
+function pauseTimer(){if(!running)return;running=false;clearInterval(timer);timer=null;updateView();}
+function stopTimer(finished=false){running=false;clearInterval(timer);timer=null;if(finished){beep();setTimeout(beep,200);setTimeout(beep,400);}updateView();}
+function resetTimer(){pauseTimer();setFromInput();}
+function addMs(ms){remainMs=Math.max(0,remainMs+ms);if(!running)totalMs=remainMs;else endTime+=ms;updateView();}
+btnStart.onclick=()=>startTimer();
+btnPause.onclick=()=>pauseTimer();
+btnReset.onclick=()=>resetTimer();
+btnAddMin.onclick=()=>addMs(60000);
+btnAdd10s.onclick=()=>addMs(10000);
+btnMute.onclick=()=>{
+  muted=!muted;
+  bgm.muted=muted;
+  btnMute.textContent=muted?"🔇":"🔊";
+};
+btnFs.onclick=()=>{if(!document.fullscreenElement)document.documentElement.requestFullscreen();else document.exitFullscreen();};
+[hEl,mEl,sEl].forEach(e=>e.onchange=setFromInput);
+
+// 预设按钮
+presetBtns.forEach(b=>b.addEventListener('click',()=> {
+  const sec=Number(b.dataset.sec);
+  hEl.value=Math.floor(sec/3600);
+  mEl.value=Math.floor((sec%3600)/60);
+  sEl.value=sec%60;
+  setFromInput();
+}));
+
+// 键盘快捷
+window.onkeydown=e=>{
+  if(e.target.tagName==="INPUT") return;
+  if(e.code==="Space"){e.preventDefault();running?pauseTimer():startTimer();}
+  if(e.key==="r"||e.key==="R")resetTimer();
+  if(e.key==="f"||e.key==="F")btnFs.onclick();
+  if(e.key==="m"||e.key==="M")btnMute.onclick();
+};
+
+setFromInput();
+updateView();
+</script>
+</body>
+</html>
