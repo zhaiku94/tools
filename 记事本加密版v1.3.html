@@ -40,20 +40,6 @@
         body.view-mode .note-card { border-left-color: var(--success); }
         #overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 999; }
         #overlay.active { display: block; }
-
-/* 新增格式化相关样式 */
-.format-group { display: flex; gap: 4px; align-items: center; }
-.format-group button { 
-    background: #fff; border: 1px solid #ddd; color: #555; 
-    padding: 5px 10px; min-width: 35px; 
-}
-.format-group button:hover { background: #f0f0f0; }
-
-/* 内容区域内的标题样式 */
-.note-content h2 { margin: 10px 0 5px; color: #2c3e50; font-size: 1.4rem; border-bottom: 1px solid #eee; }
-.note-content h3 { margin: 8px 0 4px; color: #34495e; font-size: 1.1rem; }
-.note-content p { margin: 5px 0; }
-
     </style>
 </head>
 <body>
@@ -68,13 +54,6 @@
         <div class="header-actions">
             <button class="menu-btn" onclick="NoteApp.toggleSidebar()">☰</button>
             <h1 style="margin:0; font-size: 1.3rem;">日志</h1>
-            <div class="format-group">
-        <button onclick="NoteApp.exec('bold')" title="加粗"><b>B</b></button>
-        <button onclick="NoteApp.exec('italic')" title="斜体"><i>I</i></button>
-        <button onclick="NoteApp.exec('formatBlock', 'h2')">H1</button>
-        <button onclick="NoteApp.exec('formatBlock', 'h3')">H2</button>
-        <button onclick="NoteApp.exec('formatBlock', 'p')">正文</button>
-    </div>
             <div class="btn-group">
                 <button class="mode-btn" onclick="NoteApp.toggleMode(this)">预览</button>
                 <button class="add-btn" onclick="NoteApp.add()">新增</button>
@@ -114,10 +93,8 @@ window.NoteApp = {
         const card = document.createElement('div');
         card.className = 'note-card';
         card.id = id;
-        // 注意：这里 innerHTML 渲染 text 字符串中的 HTML 标签
         card.innerHTML = `<button class="delete-btn" onclick="NoteApp.remove('${id}')">删除</button>
-                          <div class="note-content" contenteditable="${!this.isView}" 
-                               oninput="NoteApp.save(); NoteApp.updateTOC()">${text}</div>`;
+                          <div class="note-content" contenteditable="${!this.isView}" oninput="NoteApp.save(); NoteApp.updateTOC()">${text}</div>`;
         document.getElementById('notes-container').appendChild(card);
     },
 
@@ -137,15 +114,10 @@ window.NoteApp = {
         }
     },
 
-    exec(command, value = null) {
-        // 确保焦点在编辑区
-        document.execCommand(command, false, value);
-    },
-
     save() {
         const data = Array.from(document.querySelectorAll('.note-card')).map(c => ({
             id: c.id,
-            text: c.querySelector('.note-content').innerHTML // 改用 innerHTML
+            text: c.querySelector('.note-content').innerText
         }));
         localStorage.setItem('my_stable_notes_v4', JSON.stringify(data));
         return data;
@@ -202,8 +174,25 @@ const dateStr = now.getFullYear() +
        
        
         const logicScript = document.getElementById('main-logic').innerHTML;
-// --- 关键修改：动态获取 body 内容，确保 format-group 按钮被包含 ---
-    const bodyStructure = document.body.innerHTML.split('<script')[0];
+        const bodyStructure = `
+<div id="overlay" onclick="NoteApp.toggleSidebar()"></div>
+<nav id="sidebar"><h2>目录</h2><div id="toc-list"></div></nav>
+<main id="main-content">
+    <div class="header-fixed-wrap">
+        <div class="header-actions">
+            <button class="menu-btn" onclick="NoteApp.toggleSidebar()">☰</button>
+            <h1 style="margin:0; font-size: 1.3rem;">日志</h1>
+            <div class="btn-group">
+                <button class="mode-btn" onclick="NoteApp.toggleMode(this)">预览</button>
+                <button class="add-btn" onclick="NoteApp.add()">新增</button>
+                <button class="save-btn" onclick="NoteApp.export()">保存</button>
+                <button class="clear-btn" onclick="NoteApp.clearAll()">清空</button>
+            </div>
+        </div>
+    </div>
+    <div id="notes-container"></div>
+</main>`;
+
         let finalDoc = "";
 
         if (!password) {
@@ -245,7 +234,7 @@ const dateStr = now.getFullYear() +
 <body style="background:#f0f2f5;font-family:sans-serif;display:flex;justify-content:center;padding-top:100px;">
 <div style="background:white;padding:40px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.1);text-align:center;">
     <h2>🔒 笔记已加密</h2><p>请输入密码以解锁内容</p>
-    <input type="password" id="unlock-pw" onkeyup="if(event.key==='Enter') unlock()" style="padding:10px;width:200px;border:1px solid #ddd;border-radius:8px;margin-bottom:10px;font-size:16px;"><br>
+    <input type="password" id="unlock-pw" style="padding:10px;width:200px;border:1px solid #ddd;border-radius:8px;margin-bottom:10px;font-size:16px;"><br>
     <button onclick="unlock()" style="padding:10px 20px;background:#3498db;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:bold;">解密并进入</button>
 </div>
 <script>
