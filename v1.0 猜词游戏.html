@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>圣经猜词游戏</title>
+    <style>
+        :root {
+            --primary-color: #4A90E2;
+            --success-color: #2ECC71;
+            --danger-color: #E74C3C;
+            --bg-color: #F5F7FA;
+            --text-color: #333;
+        }
+
+        body {
+font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", STHeiti, "Microsoft YaHei", sans-serif;            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+            /* 防止双击放大屏幕，影响游戏操作 */
+            touch-action: manipulation;
+        }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 600px;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+        }
+
+        /* --- 设置界面 --- */
+        #setup-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.8rem;
+            background: #fdfdfd;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+
+        .upload-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+
+        input[type="file"] {
+            border: 2px dashed #ccc;
+            padding: 0.5rem;
+            border-radius: 8px;
+            max-width: 200px;
+        }
+
+        input[type="number"] {
+            padding: 0.8rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            width: 100px;
+            text-align: center;
+        }
+
+        button {
+            padding: 0.8rem 1.5rem;
+            font-size: 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.1s, opacity 0.2s;
+            color: white;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .btn-start { background-color: var(--primary-color); width: 100%; padding: 1rem 2rem; font-size: 1.2rem; margin-top: 1rem;}
+        .btn-manual { background-color: #F39C12; }
+        .btn-correct { background-color: var(--success-color); }
+        .btn-skip { background-color: var(--danger-color); }
+        .btn-cancel { background-color: #95A5A6; }
+        .btn-end { background-color: #7f8c8d; padding: 0.6rem 1.2rem; font-size: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        
+        #word-count {
+            color: var(--success-color);
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        /* --- 全屏游戏界面 --- */
+        #game-section {
+            display: none; /* 默认隐藏，JS中通过 display: flex 激活 */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: white; /* 游戏背景变白，更醒目 */
+            z-index: 1000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-sizing: border-box;
+            padding: 2rem;
+        }
+
+        /* 顶部信息栏：绝对定位在左上和右上 */
+        .top-bar {
+            position: absolute;
+            top: 20px;
+            width: 90%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+       #timer {
+            font-size: 4rem;
+            font-weight: bold;
+            color: var(--danger-color);
+            min-width: 120px; /* 从固定 width 改为 min-width */
+            text-align: left;
+        }
+
+        #score-display {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            background: #f0f8ff;
+            padding: 5px 15px;
+            border-radius: 10px;
+            min-width: 120px; /* 从固定 width 改为 min-width */
+            text-align: right;
+            white-space: nowrap; /* 新增这一行：强制文字在一行显示，绝对不换行 */
+        }
+
+        /* 超大字号的猜词展示 */
+        #word-display {
+            font-size: 18vw; /* 响应式：根据屏幕宽度自适应大小 */
+            font-weight: 900;
+            text-align: center;
+            line-height: 1.2;
+            word-wrap: break-word;
+            width: 90%;
+            margin-bottom: 10vh; /* 给底部按钮留出空间 */
+        }
+
+        /* 底部控制按钮 */
+        .controls {
+            position: absolute;
+            bottom: 30px;
+            width: 90%;
+            max-width: 800px;
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        /* 猜词时的按钮变得巨大 */
+        .controls button {
+            flex: 1;
+            padding: 2rem 1rem;
+            font-size: 2.5rem;
+            border-radius: 20px;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+        }
+
+        /* --- 结果界面 --- */
+        #result-section { display: none; }
+
+        #final-score {
+            font-size: 5rem;
+            color: var(--success-color);
+            margin: 1rem 0;
+        }
+
+        /* --- 弹窗样式 --- */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1001; 
+            left: 0; 
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            background-color: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            text-align: left;
+        }
+
+        .modal-content h3 { margin-top: 0; color: var(--primary-color); }
+        
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-family: inherit;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            resize: vertical;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        /* 针对电脑大屏幕的优化 */
+        @media (min-width: 1024px) {
+            #word-display { font-size: 12vw; }
+            .controls button { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="main-container">
+    <div id="setup-section">
+        <h1>🕊️ 猜词游戏</h1>
+        
+        <div class="input-group">
+            <label><b>1. 准备词库 (支持 CSV / TXT)</b></label>
+            <div class="upload-row">
+                <input type="file" id="fileInput" accept=".csv, .txt, text/plain">
+                <button class="btn-manual" onclick="openModal()">✍️ 手动输入</button>
+            </div>
+            <div id="word-count">当前已加载: 0 个词语</div>
+        </div>
+
+        <div class="input-group">
+            <label for="timeInput"><b>2. 游戏总时长设置 (秒)</b></label>
+            <input type="number" id="timeInput" value="60" min="10" max="600">
+        </div>
+
+        <button class="btn-start" onclick="startGame()">▶ 开始游戏</button>
+    </div>
+
+    <div id="result-section">
+        <h1>时间到！</h1>
+        <p>你的最终得分是：</p>
+        <div id="final-score">0</div>
+        <button class="btn-start" onclick="resetGame()">🔄 再玩一次</button>
+    </div>
+</div>
+
+<div id="game-section">
+    <div class="top-bar">
+        <div id="timer">60</div>
+        <button class="btn-end" onclick="endGame()">⏹ 结束游戏</button>
+        <div id="score-display">得分: 0</div>
+    </div>
+    
+    <div id="word-display">准备...</div>
+    
+    <div class="controls">
+        <button class="btn-skip" onclick="handleAnswer(false)">⏭️ 跳过</button>
+        <button class="btn-correct" onclick="handleAnswer(true)">✅ 答对</button>
+    </div>
+</div>
+
+<div id="manualModal" class="modal">
+    <div class="modal-content">
+        <h3>手动输入词库</h3>
+        <p style="font-size: 0.9rem; color: #666;">请输入你要猜的词汇，每个词语之间可以用<strong>换行</strong>、<strong>空格</strong>或<strong>逗号</strong>隔开：</p>
+        <textarea id="manualInputText" rows="8" placeholder="例如：
+摩西 大卫，十诫, 五饼二鱼"></textarea>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeModal()">取消</button>
+            <button class="btn-correct" onclick="saveManualWords()" style="margin: 0; padding: 0.8rem 1.5rem; font-size: 1rem;">保存词库</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let words = [];
+    let currentWordIndex = 0;
+    let score = 0;
+    let timeLeft = 60;
+    let timerInterval;
+
+    // --- 词库加载逻辑 ---
+
+    // 监听文件上传 (修改了ID以匹配上面的HTML)
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const text = e.target.result;
+            processWords(text);
+        };
+        reader.readAsText(file);
+    });
+
+    function openModal() { document.getElementById('manualModal').style.display = 'flex'; }
+    function closeModal() { document.getElementById('manualModal').style.display = 'none'; }
+
+    function saveManualWords() {
+        const text = document.getElementById('manualInputText').value;
+        if(text.trim() === '') {
+            alert('请输入内容！');
+            return;
+        }
+        processWords(text);
+        closeModal();
+    }
+
+    // 核心拆分逻辑更新
+    function processWords(rawText) {
+        // 使用 \s (匹配所有空白符，包括空格、换行、制表符等), 以及英文逗号(,) 和中文逗号(，)
+        const newWords = rawText.split(/[\s,，]+/)
+                                .map(word => word.trim())
+                                .filter(word => word.length > 0);
+        words = newWords;
+        document.getElementById('word-count').innerText = `当前已加载: ${words.length} 个词语`;
+        if(words.length > 0) {
+            document.getElementById('word-count').style.color = 'var(--success-color)';
+        }
+    }
+
+
+    // --- 游戏主逻辑 ---
+
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+
+    function startGame() {
+        if (words.length === 0) {
+            alert('请先导入或手动输入词库！');
+            return;
+        }
+
+        const timeInput = document.getElementById('timeInput').value;
+        timeLeft = parseInt(timeInput) || 60;
+        score = 0;
+        currentWordIndex = 0;
+
+        shuffleArray(words);
+
+        // 隐藏主容器，显示全屏游戏界面
+        document.getElementById('main-container').style.display = 'none';
+        document.getElementById('game-section').style.display = 'flex';
+
+        updateScoreDisplay();
+        showNextWord();
+        
+        document.getElementById('timer').innerText = timeLeft;
+        timerInterval = setInterval(updateTimer, 1000);
+    }
+
+    function updateTimer() {
+        timeLeft--;
+        document.getElementById('timer').innerText = timeLeft;
+
+        if (timeLeft <= 0) {
+            endGame();
+        }
+    }
+
+    function showNextWord() {
+        if (currentWordIndex < words.length) {
+            document.getElementById('word-display').innerText = words[currentWordIndex];
+        } else {
+            document.getElementById('word-display').innerText = "词库已空！";
+            setTimeout(endGame, 1000);
+        }
+    }
+
+    function handleAnswer(isCorrect) {
+        if (isCorrect) {
+            score++;
+            updateScoreDisplay();
+        }
+        currentWordIndex++;
+        showNextWord();
+    }
+
+    function updateScoreDisplay() {
+        document.getElementById('score-display').innerText = `得分: ${score}`;
+    }
+
+    function endGame() {
+        clearInterval(timerInterval);
+        // 关闭全屏游戏界面，显示主容器里的结果页面
+        document.getElementById('game-section').style.display = 'none';
+        document.getElementById('main-container').style.display = 'block';
+        document.getElementById('setup-section').style.display = 'none';
+        document.getElementById('result-section').style.display = 'block';
+        document.getElementById('final-score').innerText = score;
+    }
+
+    function resetGame() {
+        document.getElementById('result-section').style.display = 'none';
+        document.getElementById('setup-section').style.display = 'flex';
+    }
+</script>
+
+</body>
+</html>
