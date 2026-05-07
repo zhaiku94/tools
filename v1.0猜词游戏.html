@@ -3,25 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>圣经猜词游戏</title>
+    <title>圣经猜词游戏 分组版</title>
     <style>
         :root {
-            --primary-color: #4A90E2;
-            --success-color: #2ECC71;
-            --danger-color: #E74C3C;
-            --bg-color: #F5F7FA;
-            --text-color: #333;
+            --primary-color: #2563EB;
+            --primary-dark: #1E40AF;
+            --success-color: #16A34A;
+            --danger-color: #DC2626;
+            --warning-color: #D97706;
+            --accent-color: #7C3AED;
+            --bg-color: #EEF4FF;
+            --surface-color: #FFFFFF;
+            --soft-color: #F8FAFC;
+            --line-color: #E2E8F0;
+            --text-color: #172033;
+            --muted-color: #64748B;
+            --shadow: 0 18px 50px rgba(30, 64, 175, 0.14);
         }
 
         body {
-font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", STHeiti, "Microsoft YaHei", sans-serif;            background-color: var(--bg-color);
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", STHeiti, "Microsoft YaHei", sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(37, 99, 235, 0.18), transparent 30rem),
+                linear-gradient(180deg, #F8FBFF 0%, var(--bg-color) 100%);
             color: var(--text-color);
             margin: 0;
-            padding: 0;
+            padding: 24px 0;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             min-height: 100vh;
             text-align: center;
             /* 防止双击放大屏幕，影响游戏操作 */
@@ -29,88 +40,150 @@ font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue",
         }
 
         .container {
-            background: white;
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-            width: 90%;
-            max-width: 600px;
+            background: rgba(255, 255, 255, 0.92);
+            padding: 1.25rem;
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            width: min(92%, 720px);
+            backdrop-filter: blur(16px);
         }
 
         h1 {
             color: var(--primary-color);
-            margin-bottom: 1.5rem;
+            margin: 0 0 0.35rem;
+            font-size: clamp(1.8rem, 7vw, 2.6rem);
+            letter-spacing: 0;
+        }
+
+        .subtitle {
+            color: var(--muted-color);
+            margin: 0 0 1rem;
+            line-height: 1.5;
         }
 
         /* --- 设置界面 --- */
         #setup-section {
             display: flex;
             flex-direction: column;
-            gap: 1.5rem;
+            gap: 1rem;
         }
 
         .input-group {
             display: flex;
             flex-direction: column;
-            align-items: center;
-            gap: 0.8rem;
-            background: #fdfdfd;
+            align-items: stretch;
+            gap: 0.9rem;
+            background: var(--surface-color);
             padding: 1rem;
-            border-radius: 8px;
-            border: 1px solid #eee;
+            border-radius: 16px;
+            border: 1px solid var(--line-color);
+            text-align: left;
+        }
+
+        .input-group > label {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            color: var(--text-color);
+            font-size: 1rem;
         }
 
         .upload-row {
-            display: flex;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
             gap: 10px;
             align-items: center;
-            justify-content: center;
-            flex-wrap: wrap;
             width: 100%;
         }
 
         input[type="file"] {
-            border: 2px dashed #ccc;
-            padding: 0.5rem;
-            border-radius: 8px;
-            max-width: 200px;
+            border: 1.5px dashed #CBD5E1;
+            padding: 0.75rem;
+            border-radius: 12px;
+            width: 100%;
+            box-sizing: border-box;
+            background: var(--soft-color);
+            color: var(--muted-color);
         }
 
         input[type="number"] {
-            padding: 0.8rem;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 1.2rem;
-            width: 100px;
+            padding: 0.85rem 0.75rem;
+            border: 1px solid var(--line-color);
+            border-radius: 12px;
+            font-size: 1.05rem;
+            width: 100%;
             text-align: center;
+            background: var(--soft-color);
+            color: var(--text-color);
+        }
+
+        select {
+            padding: 0.85rem 0.75rem;
+            border: 1px solid var(--line-color);
+            border-radius: 12px;
+            font-size: 1rem;
+            background: var(--soft-color);
+            color: var(--text-color);
+            min-width: 0;
+        }
+
+        .generator-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .generator-row label {
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+            font-size: 0.9rem;
+            color: var(--muted-color);
+            text-align: left;
+            font-weight: 700;
+        }
+
+        .generator-row input,
+        .generator-row select {
+            width: 100%;
+            box-sizing: border-box;
         }
 
         button {
             padding: 0.8rem 1.5rem;
             font-size: 1rem;
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             cursor: pointer;
             font-weight: bold;
-            transition: transform 0.1s, opacity 0.2s;
+            transition: transform 0.1s, opacity 0.2s, box-shadow 0.2s;
             color: white;
+            box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12);
         }
 
         button:active {
             transform: scale(0.95);
         }
 
-        .btn-start { background-color: var(--primary-color); width: 100%; padding: 1rem 2rem; font-size: 1.2rem; margin-top: 1rem;}
-        .btn-manual { background-color: #F39C12; }
+        .btn-start { background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)); width: 100%; padding: 1rem 2rem; font-size: 1.2rem; margin-top: 0.35rem;}
+        .btn-manual { background-color: var(--warning-color); white-space: nowrap; }
+        .btn-generate { background: linear-gradient(135deg, var(--accent-color), #5B21B6); width: 100%; }
         .btn-correct { background-color: var(--success-color); }
         .btn-skip { background-color: var(--danger-color); }
         .btn-cancel { background-color: #95A5A6; }
-        .btn-end { background-color: #7f8c8d; padding: 0.6rem 1.2rem; font-size: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .btn-end { background-color: #475569; padding: 0.65rem 1rem; font-size: 0.95rem; box-shadow: 0 8px 18px rgba(15,23,42,0.12); }
         
         #word-count {
             color: var(--success-color);
             font-weight: bold;
             font-size: 0.9rem;
+            background: #ECFDF5;
+            border: 1px solid #BBF7D0;
+            border-radius: 999px;
+            padding: 0.55rem 0.8rem;
+            text-align: center;
         }
 
         /* --- 全屏游戏界面 --- */
@@ -121,13 +194,15 @@ font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue",
             left: 0;
             width: 100vw;
             height: 100vh;
-            background-color: white; /* 游戏背景变白，更醒目 */
+            background:
+                radial-gradient(circle at top, rgba(37, 99, 235, 0.10), transparent 26rem),
+                white;
             z-index: 1000;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             box-sizing: border-box;
-            padding: 2rem;
+            padding: 2rem 1rem;
         }
 
         /* 顶部信息栏：绝对定位在左上和右上 */
@@ -135,40 +210,56 @@ font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue",
             position: absolute;
             top: 20px;
             width: 90%;
+            max-width: 980px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 10px;
         }
 
        #timer {
-            font-size: 4rem;
+            font-size: clamp(2.4rem, 10vw, 4rem);
             font-weight: bold;
             color: var(--danger-color);
-            min-width: 120px; /* 从固定 width 改为 min-width */
+            min-width: 88px;
             text-align: left;
         }
 
         #score-display {
-            font-size: 2rem;
+            font-size: clamp(1.15rem, 5vw, 2rem);
             font-weight: bold;
             color: var(--primary-color);
             background: #f0f8ff;
-            padding: 5px 15px;
-            border-radius: 10px;
-            min-width: 120px; /* 从固定 width 改为 min-width */
-            text-align: right;
+            padding: 0.65rem 0.9rem;
+            border-radius: 999px;
+            min-width: 96px;
+            text-align: center;
             white-space: nowrap; /* 新增这一行：强制文字在一行显示，绝对不换行 */
+            border: 1px solid #BFDBFE;
+        }
+
+        #group-display {
+            position: absolute;
+            top: 88px;
+            color: var(--muted-color);
+            font-size: 1.1rem;
+            font-weight: bold;
+            background: var(--soft-color);
+            border: 1px solid var(--line-color);
+            padding: 0.55rem 0.9rem;
+            border-radius: 999px;
         }
 
         /* 超大字号的猜词展示 */
         #word-display {
-            font-size: 18vw; /* 响应式：根据屏幕宽度自适应大小 */
+            font-size: clamp(4rem, 17vw, 11rem);
             font-weight: 900;
             text-align: center;
             line-height: 1.2;
             word-wrap: break-word;
             width: 90%;
-            margin-bottom: 10vh; /* 给底部按钮留出空间 */
+            margin-bottom: 12vh;
+            color: #111827;
         }
 
         /* 底部控制按钮 */
@@ -179,25 +270,64 @@ font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue",
             max-width: 800px;
             display: flex;
             justify-content: space-between;
-            gap: 20px;
+            gap: 14px;
         }
 
         /* 猜词时的按钮变得巨大 */
         .controls button {
             flex: 1;
-            padding: 2rem 1rem;
-            font-size: 2.5rem;
-            border-radius: 20px;
-            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+            padding: clamp(1.15rem, 5vw, 2rem) 1rem;
+            font-size: clamp(1.45rem, 7vw, 2.5rem);
+            border-radius: 18px;
+            box-shadow: 0 14px 28px rgba(0,0,0,0.18);
+        }
+
+        .group-next-panel {
+            display: none;
+            position: absolute;
+            bottom: 30px;
+            width: 90%;
+            max-width: 600px;
+        }
+
+        .group-next-panel button {
+            width: 100%;
+            padding: 1.25rem;
+            font-size: clamp(1.35rem, 6vw, 2rem);
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
         }
 
         /* --- 结果界面 --- */
         #result-section { display: none; }
 
         #final-score {
-            font-size: 5rem;
+            font-size: clamp(1.35rem, 5vw, 2rem);
             color: var(--success-color);
             margin: 1rem 0;
+            font-weight: 900;
+        }
+
+        .result-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 1rem 0;
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--line-color);
+        }
+
+        .result-table th,
+        .result-table td {
+            padding: 0.85rem;
+            border-bottom: 1px solid var(--line-color);
+        }
+
+        .result-table th {
+            background: #f0f8ff;
+            color: var(--primary-color);
         }
 
         /* --- 弹窗样式 --- */
@@ -216,11 +346,11 @@ font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue",
 
         .modal-content {
             background-color: white;
-            padding: 2rem;
-            border-radius: 15px;
+            padding: 1.25rem;
+            border-radius: 18px;
             width: 90%;
             max-width: 500px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
             text-align: left;
         }
 
@@ -228,9 +358,9 @@ font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue",
         
         textarea {
             width: 100%;
-            padding: 10px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
+            padding: 12px;
+            border: 1px solid var(--line-color);
+            border-radius: 12px;
             box-sizing: border-box;
             font-family: inherit;
             font-size: 1rem;
@@ -249,16 +379,60 @@ font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue",
             #word-display { font-size: 12vw; }
             .controls button { font-size: 2rem; }
         }
+
+        @media (max-width: 520px) {
+            body {
+                padding: 12px 0;
+            }
+
+            .container {
+                width: min(94%, 720px);
+                padding: 1rem;
+                border-radius: 20px;
+            }
+
+            .generator-row {
+                grid-template-columns: 1fr;
+            }
+
+            .upload-row {
+                grid-template-columns: 1fr;
+            }
+
+            .btn-manual {
+                width: 100%;
+            }
+
+            .top-bar {
+                top: 14px;
+                width: 92%;
+            }
+
+            #group-display {
+                top: 78px;
+                font-size: 0.95rem;
+            }
+
+            #word-display {
+                width: 94%;
+            }
+
+            .controls {
+                bottom: 18px;
+                width: 92%;
+            }
+        }
     </style>
 </head>
 <body>
 
 <div class="container" id="main-container">
     <div id="setup-section">
-        <h1>🕊️ 猜词游戏</h1>
+        <h1>🕊️ 猜词游戏 分组版</h1>
+        <p class="subtitle">导入或生成词库，按小组平均分配，每组依次挑战。</p>
         
         <div class="input-group">
-            <label><b>1. 准备词库 (支持 CSV / TXT)</b></label>
+            <label><b>1. 准备词库</b></label>
             <div class="upload-row">
                 <input type="file" id="fileInput" accept=".csv, .txt, text/plain">
                 <button class="btn-manual" onclick="openModal()">✍️ 手动输入</button>
@@ -267,17 +441,56 @@ font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue",
         </div>
 
         <div class="input-group">
-            <label for="timeInput"><b>2. 游戏总时长设置 (秒)</b></label>
-            <input type="number" id="timeInput" value="60" min="10" max="600">
+            <label><b>2. 随机生成</b></label>
+            <div class="generator-row">
+                <label>
+                    生成范围
+                    <select id="rangeInput">
+                        <option value="all">整本圣经</option>
+                        <option value="old">旧约</option>
+                        <option value="new">新约</option>
+                    </select>
+                </label>
+                <label>
+                    词的字数
+                    <input type="number" id="wordLengthInput" min="1" max="12" placeholder="随机">
+                </label>
+                <label>
+                    生成数量
+                    <input type="number" id="wordQuantityInput" min="1" max="1000" placeholder="全部">
+                </label>
+            </div>
+            <button class="btn-generate" onclick="generateRandomWords()">🎲 随机生成词库</button>
+        </div>
+
+        <div class="input-group">
+            <label for="groupCountInput"><b>3. 分组设置</b></label>
+            <div class="generator-row">
+                <label>
+                    组数
+                    <input type="number" id="groupCountInput" value="2" min="1" max="20">
+                </label>
+                <label>
+                    每组时长 (秒)
+                    <input type="number" id="timeInput" value="60" min="10" max="600">
+                </label>
+                <label>
+                    分配方式
+                    <select id="assignModeInput">
+                        <option value="even">平均分配</option>
+                    </select>
+                </label>
+            </div>
         </div>
 
         <button class="btn-start" onclick="startGame()">▶ 开始游戏</button>
     </div>
 
     <div id="result-section">
-        <h1>时间到！</h1>
-        <p>你的最终得分是：</p>
+        <h1>全部小组完成！</h1>
+        <p>最终成绩：</p>
         <div id="final-score">0</div>
+        <div id="group-results"></div>
         <button class="btn-start" onclick="resetGame()">🔄 再玩一次</button>
     </div>
 </div>
@@ -285,15 +498,20 @@ font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue",
 <div id="game-section">
     <div class="top-bar">
         <div id="timer">60</div>
-        <button class="btn-end" onclick="endGame()">⏹ 结束游戏</button>
+        <button class="btn-end" onclick="finishCurrentGroup()">⏹ 结束本组</button>
         <div id="score-display">得分: 0</div>
     </div>
+    <div id="group-display">第 1 组</div>
     
     <div id="word-display">准备...</div>
     
-    <div class="controls">
+    <div class="controls" id="answer-controls">
         <button class="btn-skip" onclick="handleAnswer(false)">⏭️ 跳过</button>
         <button class="btn-correct" onclick="handleAnswer(true)">✅ 答对</button>
+    </div>
+
+    <div class="group-next-panel" id="group-next-panel">
+        <button onclick="startNextGroup()">下一组继续答题 ▶</button>
     </div>
 </div>
 
@@ -316,6 +534,93 @@ font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue",
     let score = 0;
     let timeLeft = 60;
     let timerInterval;
+    let groups = [];
+    let currentGroupIndex = 0;
+    let groupScores = [];
+    let groupWordCounts = [];
+    let isGroupFinished = false;
+
+    const bibleWordBanks = {
+        old: [
+            '创造', '亚当', '夏娃', '伊甸园', '挪亚', '方舟', '彩虹', '洪水', '巴别塔', '亚伯拉罕',
+            '以撒', '雅各', '以扫', '约瑟', '梦', '埃及', '摩西', '法老', '逾越节', '红海',
+            '旷野', '吗哪', '十诫', '西奈山', '会幕', '约柜', '祭司', '利未人', '约书亚', '耶利哥',
+            '士师', '基甸', '参孙', '路得', '波阿斯', '撒母耳', '扫罗', '大卫', '歌利亚', '约拿单',
+            '所罗门', '圣殿', '箴言', '诗篇', '以利亚', '以利沙', '迦密山', '乃缦', '约拿', '尼尼微',
+            '但以理', '狮子坑', '火窑', '以斯帖', '末底改', '哈曼', '尼希米', '以斯拉', '耶利米', '以赛亚',
+            '以西结', '何西阿', '阿摩司', '弥迦', '玛拉基', '锡安', '耶路撒冷', '伯利恒', '迦南', '应许之地',
+            '祭坛', '献祭', '安息日', '禧年', '至圣所', '铜蛇', '金牛犊', '云柱', '火柱', '葡萄园',
+            '牧羊人', '君王', '先知', '智慧', '敬畏耶和华', '生命树', '分别善恶树', '雅各天梯', '苦水变甜', '磐石出水'
+        ],
+        new: [
+            '耶稣', '马利亚', '约瑟', '施洗约翰', '伯利恒', '拿撒勒', '加利利', '约旦河', '门徒', '彼得',
+            '安得烈', '雅各', '约翰', '马太', '多马', '腓力', '拿但业', '犹大', '保罗', '巴拿巴',
+            '司提反', '提摩太', '提多', '腓利门', '福音', '天国', '悔改', '信心', '恩典', '救赎',
+            '十字架', '复活', '升天', '圣灵', '五旬节', '教会', '祷告', '医治', '神迹', '比喻',
+            '撒种', '芥菜种', '浪子', '好撒马利亚人', '法利赛人', '撒都该人', '税吏', '牧羊人', '葡萄树', '羊门',
+            '真理', '生命', '道路', '光', '盐', '爱', '盼望', '忍耐', '喜乐', '和平',
+            '温柔', '节制', '良善', '忠心', '洁净', '饶恕', '洗礼', '圣餐', '饼', '杯',
+            '迦拿婚宴', '五饼二鱼', '登山宝训', '主祷文', '八福', '拉撒路', '撒该', '抹大拉马利亚', '客西马尼', '各各他',
+            '空坟墓', '以马忤斯', '大使命', '启示录', '新天新地', '羔羊', '生命册', '七印', '七号', '七碗'
+        ]
+    };
+
+    function expandBibleWordBanksToThousand() {
+        const oldBooks = ['创世记', '出埃及记', '利未记', '民数记', '申命记', '约书亚记', '士师记', '路得记', '撒母耳记', '列王纪', '历代志', '以斯拉记', '尼希米记', '以斯帖记', '约伯记', '诗篇', '箴言', '传道书', '雅歌', '以赛亚书', '耶利米书', '耶利米哀歌', '以西结书', '但以理书', '何西阿书', '约珥书', '阿摩司书', '俄巴底亚书', '约拿书', '弥迦书', '那鸿书', '哈巴谷书', '西番雅书', '哈该书', '撒迦利亚书', '玛拉基书'];
+        const newBooks = ['马太福音', '马可福音', '路加福音', '约翰福音', '使徒行传', '罗马书', '哥林多前书', '哥林多后书', '加拉太书', '以弗所书', '腓立比书', '歌罗西书', '帖撒罗尼迦前书', '帖撒罗尼迦后书', '提摩太前书', '提摩太后书', '提多书', '腓利门书', '希伯来书', '雅各书', '彼得前书', '彼得后书', '约翰一书', '约翰二书', '约翰三书', '犹大书', '启示录'];
+        const oldNames = ['亚当', '夏娃', '亚伯', '该隐', '以诺', '挪亚', '闪', '含', '雅弗', '亚伯拉罕', '撒拉', '夏甲', '以实玛利', '以撒', '利百加', '雅各', '以扫', '拉结', '利亚', '约瑟', '便雅悯', '犹大', '摩西', '亚伦', '米利暗', '约书亚', '迦勒', '喇合', '底波拉', '基甸', '耶弗他', '参孙', '拿俄米', '路得', '波阿斯', '哈拿', '以利', '撒母耳', '扫罗', '大卫', '拔示巴', '拿单', '押沙龙', '所罗门', '罗波安', '耶罗波安', '以利亚', '以利沙', '希西家', '约西亚', '以斯拉', '尼希米', '以斯帖', '末底改', '约伯', '以赛亚', '耶利米', '以西结', '但以理', '哈拿尼雅', '米沙利', '亚撒利雅', '何西阿', '约珥', '阿摩司', '约拿', '弥迦', '哈巴谷', '西番雅', '哈该', '撒迦利亚', '玛拉基'];
+        const newNames = ['耶稣', '马利亚', '约瑟', '伊利莎白', '撒迦利亚', '施洗约翰', '西面', '亚拿', '彼得', '安得烈', '雅各', '约翰', '腓力', '拿但业', '马太', '多马', '西门', '犹大', '马大', '马利亚', '拉撒路', '尼哥底母', '撒该', '抹大拉马利亚', '巴拉巴', '彼拉多', '希律', '司提反', '腓利', '保罗', '亚拿尼亚', '巴拿巴', '西拉', '提摩太', '路加', '马可', '百基拉', '亚居拉', '亚波罗', '提多', '腓利门', '阿尼西母'];
+        const oldPlaces = ['伊甸园', '亚拉腊山', '示拿', '吾珥', '哈兰', '迦南', '示剑', '伯特利', '希伯仑', '所多玛', '蛾摩拉', '埃及', '歌珊', '西奈山', '旷野', '玛拉', '以琳', '利非订', '加低斯', '约旦河', '耶利哥', '示罗', '伯利恒', '耶路撒冷', '锡安', '基遍', '迦密山', '撒玛利亚', '尼尼微', '巴比伦', '书珊城'];
+        const newPlaces = ['伯利恒', '拿撒勒', '加利利', '迦拿', '迦百农', '撒玛利亚', '耶路撒冷', '伯大尼', '客西马尼', '各各他', '以马忤斯', '安提阿', '大马士革', '腓立比', '雅典', '哥林多', '以弗所', '罗马', '拔摩海岛'];
+        const oldThemes = ['创造', '堕落', '应许', '立约', '献祭', '拣选', '出埃及', '逾越', '律法', '会幕', '敬拜', '圣洁', '祭司', '审判', '怜悯', '悔改', '智慧', '赞美', '祷告', '盼望', '预言', '归回', '重建', '信靠', '顺服', '安息', '赦免', '公义', '慈爱', '荣耀'];
+        const newThemes = ['福音', '天国', '悔改', '信心', '恩典', '救赎', '复活', '圣灵', '教会', '宣教', '洗礼', '圣餐', '祷告', '医治', '神迹', '比喻', '饶恕', '爱心', '盼望', '忍耐', '喜乐', '和平', '合一', '成圣', '服事', '见证', '再来', '审判', '新天新地', '永生'];
+        const oldEvents = ['创造天地', '始祖犯罪', '挪亚造方舟', '洪水退去', '巴别塔分散', '亚伯拉罕蒙召', '以撒出生', '雅各改名', '约瑟解梦', '摩西蒙召', '十灾降临', '红海分开', '吗哪降下', '颁布十诫', '约柜前行', '耶利哥倒塌', '基甸争战', '参孙得力', '路得拾穗', '大卫受膏', '大卫胜歌利亚', '所罗门建殿', '以利亚祷告', '火从天降', '约拿逃跑', '但以理祷告', '狮子坑蒙救', '圣殿重建', '城墙重建'];
+        const newEvents = ['耶稣降生', '博士朝拜', '受洗受试探', '呼召门徒', '迦拿婚宴', '医治瘫子', '平静风浪', '五饼二鱼', '登山宝训', '撒种比喻', '浪子回头', '拉撒路复活', '骑驴进城', '最后晚餐', '客西马尼祷告', '彼得三次不认主', '耶稣受难', '空坟墓', '主向门徒显现', '耶稣升天', '五旬节圣灵降临', '司提反殉道', '保罗归主', '腓立比监狱', '雅典讲道', '保罗到罗马'];
+        const suffixes = ['人物', '地点', '故事', '主题', '经文', '功课', '祷告', '信心', '顺服', '应许', '神迹', '比喻', '敬拜', '争战', '拯救', '呼召'];
+
+        function addUnique(bank, term) {
+            if (term && !bank.includes(term)) bank.push(term);
+        }
+
+        function fillBank(bank, targetCount, groupsForCombos) {
+            groupsForCombos.forEach(group => group.forEach(term => addUnique(bank, term)));
+            for (const group of groupsForCombos) {
+                for (const term of group) {
+                    for (const suffix of suffixes) {
+                        addUnique(bank, `${term}${suffix}`);
+                        if (bank.length >= targetCount) return;
+                    }
+                }
+            }
+            for (const firstGroup of groupsForCombos) {
+                for (const secondGroup of groupsForCombos) {
+                    if (firstGroup === secondGroup) continue;
+                    for (const first of firstGroup) {
+                        for (const second of secondGroup) {
+                            addUnique(bank, `${first}${second}`);
+                            if (bank.length >= targetCount) return;
+                        }
+                    }
+                }
+            }
+        }
+
+        fillBank(bibleWordBanks.old, 610, [oldBooks, oldNames, oldPlaces, oldThemes, oldEvents]);
+        fillBank(bibleWordBanks.new, 410, [newBooks, newNames, newPlaces, newThemes, newEvents]);
+
+        let allWords = new Set([...bibleWordBanks.old, ...bibleWordBanks.new]);
+        let fillerIndex = 1;
+        while (allWords.size < 1000) {
+            const book = newBooks[fillerIndex % newBooks.length];
+            const theme = newThemes[fillerIndex % newThemes.length];
+            const term = `${book}${theme}${fillerIndex}`;
+            addUnique(bibleWordBanks.new, term);
+            allWords.add(term);
+            fillerIndex++;
+        }
+    }
+
+    expandBibleWordBanksToThousand();
 
     // --- 词库加载逻辑 ---
 
@@ -352,10 +657,63 @@ font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue",
                                 .map(word => word.trim())
                                 .filter(word => word.length > 0);
         words = newWords;
+        updateWordCount(`当前已加载: ${words.length} 个词语`);
+    }
+
+    function updateWordCount(message) {
         document.getElementById('word-count').innerText = `当前已加载: ${words.length} 个词语`;
+        if (message) {
+            document.getElementById('word-count').innerText = message;
+        }
         if(words.length > 0) {
             document.getElementById('word-count').style.color = 'var(--success-color)';
         }
+    }
+
+    function getBibleWordsByRange(range) {
+        if (range === 'old') return [...bibleWordBanks.old];
+        if (range === 'new') return [...bibleWordBanks.new];
+        return [...new Set([...bibleWordBanks.old, ...bibleWordBanks.new])].slice(0, 1000);
+    }
+
+    function countChineseWordLength(word) {
+        return Array.from(word.replace(/\s/g, '')).length;
+    }
+
+    function generateRandomWords() {
+        const range = document.getElementById('rangeInput').value;
+        const lengthValue = document.getElementById('wordLengthInput').value.trim();
+        const quantityValue = document.getElementById('wordQuantityInput').value.trim();
+        const targetLength = lengthValue === '' ? null : parseInt(lengthValue, 10);
+        const targetQuantity = quantityValue === '' ? null : parseInt(quantityValue, 10);
+        let sourceWords = getBibleWordsByRange(range);
+
+        if (targetLength !== null) {
+            if (!Number.isInteger(targetLength) || targetLength < 1) {
+                alert('词的字数请输入大于 0 的数字，或留空随机生成。');
+                return;
+            }
+            sourceWords = sourceWords.filter(word => countChineseWordLength(word) === targetLength);
+        }
+
+        if (targetQuantity !== null && (!Number.isInteger(targetQuantity) || targetQuantity < 1)) {
+            alert('生成数量请输入大于 0 的数字，或留空生成全部。');
+            return;
+        }
+
+        if (sourceWords.length === 0) {
+            alert('这个范围里暂时没有符合字数的词，请换一个字数或留空随机生成。');
+            return;
+        }
+
+        const uniqueWords = [...new Set(sourceWords)];
+        shuffleArray(uniqueWords);
+        words = targetQuantity === null ? uniqueWords : uniqueWords.slice(0, targetQuantity);
+
+        const rangeText = { all: '整本圣经', old: '旧约', new: '新约' }[range];
+        const lengthText = targetLength ? `${targetLength} 字` : '随机字数';
+        const quantityText = targetQuantity ? `最多 ${targetQuantity} 个` : '全部';
+        updateWordCount(`已生成: ${words.length} 个词语（${rangeText} / ${lengthText} / ${quantityText}）`);
     }
 
 
@@ -368,26 +726,67 @@ font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue",
         }
     }
 
+    function createGroups(sourceWords, groupCount) {
+        const uniqueWords = [...new Set(sourceWords)];
+        shuffleArray(uniqueWords);
+
+        const nextGroups = Array.from({ length: groupCount }, () => []);
+        uniqueWords.forEach((word, index) => {
+            nextGroups[index % groupCount].push(word);
+        });
+
+        return nextGroups;
+    }
+
     function startGame() {
         if (words.length === 0) {
             alert('请先导入或手动输入词库！');
             return;
         }
 
-        const timeInput = document.getElementById('timeInput').value;
-        timeLeft = parseInt(timeInput) || 60;
-        score = 0;
-        currentWordIndex = 0;
+        const groupCountInput = document.getElementById('groupCountInput').value;
+        const groupCount = parseInt(groupCountInput, 10) || 1;
+        if (groupCount < 1) {
+            alert('组数请输入大于 0 的数字！');
+            return;
+        }
+        if (groupCount > words.length) {
+            alert('组数不能超过词语数量，否则会有小组没有词。');
+            return;
+        }
 
-        shuffleArray(words);
+        const timeInput = document.getElementById('timeInput').value;
+        const secondsPerGroup = parseInt(timeInput, 10) || 60;
+        if (secondsPerGroup < 1) {
+            alert('每组时长请输入大于 0 的数字！');
+            return;
+        }
+
+        groups = createGroups(words, groupCount);
+        groupScores = Array.from({ length: groupCount }, () => 0);
+        groupWordCounts = groups.map(group => group.length);
+        currentGroupIndex = 0;
 
         // 隐藏主容器，显示全屏游戏界面
         document.getElementById('main-container').style.display = 'none';
         document.getElementById('game-section').style.display = 'flex';
+        startGroup(secondsPerGroup);
+    }
+
+    function startGroup(secondsPerGroup) {
+        clearInterval(timerInterval);
+        score = 0;
+        currentWordIndex = 0;
+        isGroupFinished = false;
+        timeLeft = secondsPerGroup || parseInt(document.getElementById('timeInput').value, 10) || 60;
+
+        document.getElementById('answer-controls').style.display = 'flex';
+        document.getElementById('group-next-panel').style.display = 'none';
+        document.getElementById('group-display').innerText = `第 ${currentGroupIndex + 1} 组 / 共 ${groups.length} 组 · ${groups[currentGroupIndex].length} 个词`;
 
         updateScoreDisplay();
         showNextWord();
-        
+
         document.getElementById('timer').innerText = timeLeft;
         timerInterval = setInterval(updateTimer, 1000);
     }
@@ -397,20 +796,27 @@ font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue",
         document.getElementById('timer').innerText = timeLeft;
 
         if (timeLeft <= 0) {
-            endGame();
+            finishCurrentGroup();
         }
     }
 
     function showNextWord() {
-        if (currentWordIndex < words.length) {
-            document.getElementById('word-display').innerText = words[currentWordIndex];
+        const currentGroupWords = groups[currentGroupIndex] || [];
+        if (currentWordIndex < currentGroupWords.length) {
+            document.getElementById('word-display').innerText = currentGroupWords[currentWordIndex];
+            document.getElementById('answer-controls').style.display = 'flex';
         } else {
-            document.getElementById('word-display').innerText = "词库已空！";
-            setTimeout(endGame, 1000);
+            finishCurrentGroup();
         }
     }
 
     function handleAnswer(isCorrect) {
+        const currentGroupWords = groups[currentGroupIndex] || [];
+        if (isGroupFinished || currentWordIndex >= currentGroupWords.length) {
+            document.getElementById('answer-controls').style.display = 'none';
+            return;
+        }
+
         if (isCorrect) {
             score++;
             updateScoreDisplay();
@@ -420,17 +826,75 @@ font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue",
     }
 
     function updateScoreDisplay() {
-        document.getElementById('score-display').innerText = `得分: ${score}`;
+        document.getElementById('score-display').innerText = `本组: ${score}`;
+    }
+
+    function finishCurrentGroup() {
+        if (isGroupFinished) return;
+        isGroupFinished = true;
+        clearInterval(timerInterval);
+        groupScores[currentGroupIndex] = score;
+        document.getElementById('answer-controls').style.display = 'none';
+
+        const isLastGroup = currentGroupIndex >= groups.length - 1;
+        document.getElementById('word-display').innerText = isLastGroup
+            ? '全部小组完成！'
+            : `第 ${currentGroupIndex + 1} 组完成！`;
+
+        if (isLastGroup) {
+            setTimeout(endGame, 900);
+        } else {
+            document.getElementById('group-next-panel').style.display = 'block';
+        }
+    }
+
+    function startNextGroup() {
+        if (currentGroupIndex >= groups.length - 1) {
+            endGame();
+            return;
+        }
+        currentGroupIndex++;
+        startGroup();
     }
 
     function endGame() {
         clearInterval(timerInterval);
-        // 关闭全屏游戏界面，显示主容器里的结果页面
         document.getElementById('game-section').style.display = 'none';
         document.getElementById('main-container').style.display = 'block';
         document.getElementById('setup-section').style.display = 'none';
         document.getElementById('result-section').style.display = 'block';
-        document.getElementById('final-score').innerText = score;
+        renderGroupResults();
+    }
+
+    function renderGroupResults() {
+        const maxScore = Math.max(...groupScores);
+        const winners = groupScores
+            .map((scoreValue, index) => ({ scoreValue, index }))
+            .filter(item => item.scoreValue === maxScore)
+            .map(item => `第 ${item.index + 1} 组`)
+            .join('、');
+
+        document.getElementById('final-score').innerText = `最高分：${maxScore}（${winners}）`;
+        document.getElementById('group-results').innerHTML = `
+            <table class="result-table">
+                <thead>
+                    <tr>
+                        <th>小组</th>
+                        <th>词数</th>
+                        <th>答对</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${groupScores.map((scoreValue, index) => `
+                        <tr>
+                            <td>第 ${index + 1} 组</td>
+                            <td>${groupWordCounts[index]}</td>
+                            <td>${scoreValue}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
     }
 
     function resetGame() {
